@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toastyvotes Speech Timer</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            transition: background-color 0.1s linear;
+            background-color: rgb(255, 255, 255);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Setup Screen */
+        #setup-screen {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 1px solid #ccc;
+            max-width: 400px;
+        }
+
+        h1 { margin-top: 0; }
+
+        /* Presets */
+        .presets {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .preset-btn {
+            margin-top: 0;
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover { 
+            background-color: #e0e0e0; 
+            border-color: #999;
+        }
+
+        /* Input area */
+        .input-group {
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        label { font-weight: bold; }
+
+        input[type="text"] {
+            width: 80px;
+            padding: 8px;
+            font-size: 16px;
+            text-align: center;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+        }
+
+        .start-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #004165;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .start-btn:hover { background-color: #002d47; }
+
+        /* Timer Screen */
+        #timer-screen {
+            display: none;
+            text-align: center;
+        }
+
+        #timer-display {
+            font-size: 20vw;
+            font-variant-numeric: tabular-nums;
+            font-weight: bold;
+            color: #111;
+            text-shadow: 
+            -3px -3px 0 #fff,  
+            3px -3px 0 #fff,
+            -3px  3px 0 #fff,
+            3px  3px 0 #fff,
+            0px  0px 20px rgba(255,255,255,0.8);
+            margin: 0;
+            line-height: 1;
+        }
+
+        /* Overtime Styles */
+        .overtime-text {
+            color: red !important;
+            text-shadow: none !important;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <h1>Toasty Timer</h1>
+        
+        <div class="presets">
+            <button class="preset-btn" onclick="setPreset('01:00', '01:30', '02:00')">Table Topics</button>
+            <button class="preset-btn" onclick="setPreset('04:00', '05:00', '06:00')">Ice-Breaker</button>
+            <button class="preset-btn" onclick="setPreset('05:00', '06:00', '07:00')">Prepared Speech</button>
+            <button class="preset-btn" onclick="setPreset('02:00', '02:30', '03:00')">Evaluator</button>
+        </div>
+
+        <p>Enter target times in <strong>MM:SS</strong> format.</p>
+        
+        <div class="input-group">
+            <label for="low-time">Low Time (Green):</label>
+            <input type="text" id="low-time" placeholder="05:00" value="05:00">
+        </div>
+        <div class="input-group">
+            <label for="mid-time">Mid Time (Yellow):</label>
+            <input type="text" id="mid-time" placeholder="06:00" value="06:00">
+        </div>
+        <div class="input-group">
+            <label for="high-time">High Time (Red):</label>
+            <input type="text" id="high-time" placeholder="07:00" value="07:00">
+        </div>
+
+        <button class="start-btn" onclick="startTimer()">Start Timer</button>
+    </div>
+
+    <div id="timer-screen">
+        <div id="timer-display">00:00</div>
+    </div>
+
+    <script>
+        const COLOR_WHITE = [255, 255, 255];
+        const COLOR_GREEN = [0, 200, 0];
+        const COLOR_YELLOW = [255, 230, 0];
+        const COLOR_RED = [255, 0, 0];
+        const COLOR_BLACK = [0, 0, 0];
+
+        let lowSec, midSec, highSec;
+        let startTime;
+        let animationFrameId;
+
+        // Function to handle preset buttons
+        function setPreset(low, mid, high) {
+            document.getElementById('low-time').value = low;
+            document.getElementById('mid-time').value = mid;
+            document.getElementById('high-time').value = high;
+        }
+
+        function parseTimeToSeconds(timeStr) {
+            const parts = timeStr.split(':');
+            if (parts.length !== 2) return 0;
+            return (parseInt(parts[0], 10) * 60) + parseInt(parts[1], 10);
+        }
+
+        function formatTime(totalSeconds) {
+            const m = Math.floor(totalSeconds / 60);
+            const s = Math.floor(totalSeconds % 60);
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function interpolateColor(color1, color2, factor) {
+            const r = Math.round(color1[0] + factor * (color2[0] - color1[0]));
+            const g = Math.round(color1[1] + factor * (color2[1] - color1[1]));
+            const b = Math.round(color1[2] + factor * (color2[2] - color1[2]));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function startTimer() {
+            // Read inputs
+            lowSec = parseTimeToSeconds(document.getElementById('low-time').value);
+            midSec = parseTimeToSeconds(document.getElementById('mid-time').value);
+            highSec = parseTimeToSeconds(document.getElementById('high-time').value);
+
+            if (lowSec >= midSec || midSec >= highSec) {
+                alert("Please ensure Low < Mid < High times.");
+                return;
+            }
+
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('timer-screen').style.display = 'block';
+            
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch((e) => console.log("Fullscreen ignored:", e));
+            }
+
+            startTime = Date.now();
+            updateTimer();
+        }
+
+	function updateTimer() {
+            const now = Date.now();
+            const elapsed = (now - startTime) / 1000;
+            const displayStr = formatTime(elapsed);
+            
+            const displayEl = document.getElementById('timer-display');
+            displayEl.textContent = displayStr;
+
+            // Determine Background Color
+            let bgColor = `rgb(255, 255, 255)`;
+            const transitionTime = 3; // Number of seconds to fade
+
+            if (elapsed < lowSec - transitionTime) {
+                // Solid White
+                bgColor = `rgb(255, 255, 255)`;
+            } 
+            else if (elapsed < lowSec) {
+                // Fade White to Green (last 10s)
+                const factor = (elapsed - (lowSec - transitionTime)) / transitionTime;
+                bgColor = interpolateColor(COLOR_WHITE, COLOR_GREEN, factor);
+            } 
+            else if (elapsed < midSec - transitionTime) {
+                // Solid Green
+                bgColor = `rgb(0, 200, 0)`;
+            } 
+            else if (elapsed < midSec) {
+                // Fade Green to Yellow (last 10s)
+                const factor = (elapsed - (midSec - transitionTime)) / transitionTime;
+                bgColor = interpolateColor(COLOR_GREEN, COLOR_YELLOW, factor);
+            } 
+            else if (elapsed < highSec - transitionTime) {
+                // Solid Yellow
+                bgColor = `rgb(255, 230, 0)`;
+            } 
+            else if (elapsed < highSec) {
+                // Fade Yellow to Red (last 10s)
+                const factor = (elapsed - (highSec - transitionTime)) / transitionTime;
+                bgColor = interpolateColor(COLOR_YELLOW, COLOR_RED, factor);
+            } 
+            else if (elapsed < highSec + 30) {
+                // Fade Red to Black over 30 seconds (overtime)
+                const factor = (elapsed - highSec) / 30;
+                bgColor = interpolateColor(COLOR_RED, COLOR_BLACK, factor);
+            } 
+            else {
+                // Overtime Black with blinking red text
+                bgColor = `rgb(0, 0, 0)`;
+                displayEl.classList.add('overtime-text');
+            }
+
+            document.body.style.backgroundColor = bgColor;
+
+            animationFrameId = requestAnimationFrame(updateTimer);
+        }
+    </script>
+</body>
+</html>

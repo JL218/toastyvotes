@@ -1,0 +1,107 @@
+{% extends 'voting/base.html' %}
+{% load static %}
+
+{% block title %}ToastyVotes - Home{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 text-center">
+        <div class="my-5">
+            <img src="{% static 'voting/images/toastyvotes-logo-large.png' %}" alt="ToastyVotes Logo" class="img-fluid mb-4" style="max-height: 150px;">
+            <h1 class="display-4 mb-3">Welcome to ToastyVotes</h1>
+            <p class="lead">A beautiful way to vote for Speakers, Evaluators, and Table Topics Masters</p>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center mt-3">
+    <div class="col-md-4">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <img src="{% static 'voting/images/vote-icon.png' %}" alt="Vote Icon" class="img-fluid mb-3" style="max-height: 80px;">
+                <h3>Easy Voting</h3>
+                <p>Cast your votes for your favorite speakers, evaluators, and table topics masters with just a few clicks.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <img src="{% static 'voting/images/timer-icon.png' %}" alt="Timer Icon" class="img-fluid mb-3" style="max-height: 80px;">
+                <h3>24-Hour Sessions</h3>
+                <p>Voting sessions automatically expire after 24 hours to ensure fresh results for each meeting.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <img src="{% static 'voting/images/trophy-icon.png' %}" alt="Trophy Icon" class="img-fluid mb-3" style="max-height: 80px;">
+                <h3>Fair Results</h3>
+                <p>Results are hidden until polls close to ensure fair voting, with vote counts only visible briefly to admins.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12 text-center">
+        {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg px-4">Go to Dashboard</a>
+        {% else %}
+            <div class="d-flex justify-content-center">
+                <a href="{% url 'login' %}" class="btn btn-primary btn-lg px-4 me-3">Login</a>
+                <a href="{% url 'register' %}" class="btn btn-outline-primary btn-lg px-4">Register</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">How It Works</h3>
+            </div>
+            <div class="card-body">
+                <div class="d-flex mb-4">
+                    <div class="me-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">1</div>
+                    </div>
+                    <div>
+                        <h5>Admin Creates a Vote</h5>
+                        <p>Admins set up a voting session by entering names for Speakers, Evaluators, and Table Topics Masters.</p>
+                    </div>
+                </div>
+                <div class="d-flex mb-4">
+                    <div class="me-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">2</div>
+                    </div>
+                    <div>
+                        <h5>Members Vote</h5>
+                        <p>Members visit the unique voting link and cast their votes for their favorite performers in each category.</p>
+                    </div>
+                </div>
+                <div class="d-flex mb-4">
+                    <div class="me-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">3</div>
+                    </div>
+                    <div>
+                        <h5>Admin Closes Polls</h5>
+                        <p>When voting concludes, the admin closes the polls and the winners are displayed.</p>
+                    </div>
+                </div>
+                <div class="d-flex">
+                    <div class="me-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">4</div>
+                    </div>
+                    <div>
+                        <h5>Results Announcement</h5>
+                        <p>Winners are announced for each category, with vote counts visible only to admins for a brief moment.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

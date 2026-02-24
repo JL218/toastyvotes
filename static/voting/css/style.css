@@ -1,0 +1,223 @@
+/* ToastyVotes - White and Orange Theme */
+
+:root {
+    --primary: #FF7A00;
+    --primary-dark: #E66C00;
+    --primary-light: #FF9334;
+    --secondary: #F8F9FA;
+    --text-dark: #343a40;
+    --text-light: #6c757d;
+    --white: #ffffff;
+    --success: #28a745;
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --info: #17a2b8;
+}
+
+/* Overall Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text-dark);
+    background-color: var(--secondary);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
+.btn-outline-primary {
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+a {
+    color: var(--primary);
+}
+
+a:hover {
+    color: var(--primary-dark);
+}
+
+/* Navigation */
+.navbar {
+    background-color: var(--primary);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Logo styling */
+.transparent-logo {
+    background-color: transparent !important;
+    filter: drop-shadow(0 0 2px rgba(255,255,255,0.4));
+    border-radius: 5px;
+    padding: 2px;
+    transition: transform 0.2s ease;
+}
+
+.transparent-logo:hover {
+    transform: scale(1.05);
+}
+
+.navbar-dark .navbar-nav .nav-link {
+    color: rgba(255,255,255,0.85);
+}
+
+.navbar-dark .navbar-nav .nav-link:hover, 
+.navbar-dark .navbar-nav .nav-link:focus,
+.navbar-dark .navbar-nav .nav-link.active {
+    color: var(--white);
+}
+
+/* Cards */
+.card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    border: none;
+    margin-bottom: 20px;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0,0,0,0.08);
+}
+
+.card-header {
+    background-color: var(--white);
+    border-bottom: 2px solid var(--primary-light);
+    padding: 15px 20px;
+    border-radius: 10px 10px 0 0 !important;
+}
+
+/* Forms */
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem rgba(255,122,0,0.25);
+}
+
+.form-label {
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+/* Radio button styling for voting */
+.custom-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.custom-radio {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.custom-radio:hover {
+    border-color: var(--primary-light);
+    background-color: rgba(255, 147, 52, 0.05);
+}
+
+.custom-radio.selected {
+    border-color: var(--primary);
+    background-color: rgba(255, 122, 0, 0.1);
+}
+
+.custom-radio input[type="radio"] {
+    display: none;
+}
+
+.custom-radio label {
+    display: flex;
+    cursor: pointer;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin: 0;
+}
+
+/* Results page */
+.winner-card {
+    border-left: 5px solid var(--primary);
+    background-color: rgba(255, 122, 0, 0.05);
+}
+
+.results-header {
+    color: var(--primary);
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary-light);
+}
+
+/* Footer */
+.footer {
+    background-color: var(--primary);
+    color: var(--white);
+}
+
+.footer p {
+    color: var(--white);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.vote-section {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Unhide Animation for Vote Count */
+@keyframes pulse {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.vote-count {
+    opacity: 0;
+}
+
+.vote-count.visible {
+    animation: pulse 3s ease-in-out forwards;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 15px;
+    }
+    
+    .custom-radio {
+        padding: 12px;
+    }
+    
+    .container {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}

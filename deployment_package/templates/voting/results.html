@@ -1,0 +1,100 @@
+{% extends 'voting/base.html' %}
+{% load static %}
+
+{% block title %}ToastyVotes - Results{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1>{{ vote_session.title }} - Results</h1>
+        <p class="lead">{% if vote_session.polls_closed %}Final results{% else %}Preliminary results{% endif %}</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        {% if is_admin %}
+            {% if not vote_session.polls_closed %}
+                <a href="{% url 'manage_session' vote_session.code %}" class="btn btn-primary">
+                    Manage Session
+                </a>
+            {% else %}
+                <button id="unhide-votes" class="btn btn-outline-primary">
+                    <i class="bi bi-eye"></i> Unhide Vote Counts (3s)
+                </button>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+{% if not vote_session.polls_closed %}
+    <div class="alert alert-warning">
+        <h4 class="alert-heading">Polls are still open!</h4>
+        <p>These results are preliminary and may change as more votes are cast. Final results will be available when the polls close.</p>
+        {% if is_admin %}
+            <hr>
+            <p class="mb-0">You're seeing this preview because you're an admin. Other users cannot see these results yet.</p>
+        {% endif %}
+    </div>
+{% endif %}
+
+<div class="row">
+    {% for role_type, role_data in results.items %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h3 class="mb-0">Best {{ role_data.type_display }}</h3>
+                </div>
+                <div class="card-body">
+                    {% if role_data.winners %}
+                        <h4 class="results-header">
+                            {% if role_data.winners|length > 1 %}
+                                Winners (Tied)
+                            {% else %}
+                                Winner
+                            {% endif %}
+                        </h4>
+                        
+                        {% for winner in role_data.winners %}
+                            <div class="winner-card p-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">{{ winner }}</h5>
+                                    <div class="d-flex align-items-center">
+                                        <img src="{% static 'voting/images/trophy.png' %}" alt="Trophy" width="24" class="me-2">
+                                        {% for vote in role_data.votes %}
+                                            {% if vote.role__name == winner %}
+                                                <span class="vote-count badge bg-primary rounded-pill">{{ vote.count }} vote{% if vote.count != 1 %}s{% endif %}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        
+                        {% if is_admin %}
+                            <h5 class="mt-4 mb-3">All Results</h5>
+                            <ul class="list-group">
+                                {% for vote in role_data.votes %}
+                                    {% if vote.role__name not in role_data.winners %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            {{ vote.role__name }}
+                                            <span class="vote-count badge bg-secondary rounded-pill">{{ vote.count }} vote{% if vote.count != 1 %}s{% endif %}</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <p class="mb-0">No votes have been cast yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

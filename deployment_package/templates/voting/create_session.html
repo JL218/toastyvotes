@@ -1,0 +1,113 @@
+{% extends 'voting/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}ToastyVotes - Create Vote Session{% endblock %}
+
+{% block extra_css %}
+<style>
+    .role-form {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background-color: #fff;
+    }
+    
+    .role-form-header {
+        background-color: var(--primary);
+        color: white;
+        padding: 10px 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Create a Vote Session</h1>
+        <p class="lead">Set up a new voting session for your meeting. The session will be valid for 24 hours.</p>
+    </div>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Session Details</h3>
+                </div>
+                <div class="card-body">
+                    {{ session_form|crispy }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">Participants</h3>
+                    <small class="text-muted">Enter the names of people who can be voted for in each category</small>
+                </div>
+                <div class="card-body">
+                    {{ role_formset.management_form }}
+                    
+                    <div class="row">
+                        {% for form, label in role_forms %}
+                            <div class="col-md-6">
+                                <div class="role-form">
+                                    <div class="role-form-header">
+                                        <h4 class="mb-0">{{ label }}</h4>
+                                    </div>
+                                    {% for hidden_field in form.hidden_fields %}
+                                        {{ hidden_field }}
+                                    {% endfor %}
+                                    {{ form.name|as_crispy_field }}
+                                    {{ form.role_type.as_hidden }}
+                                    {{ form.position.as_hidden }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12 text-center">
+            <button type="submit" class="btn btn-primary btn-lg px-5">Create Vote Session</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-lg ms-2">Cancel</a>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set the role types and positions based on the form index
+        const roleTypes = ['SPEAKER', 'SPEAKER', 'EVALUATOR', 'EVALUATOR', 'TABLE_TOPICS', 'TABLE_TOPICS'];
+        const positions = [1, 2, 1, 2, 1, 2];
+        
+        // Find all role forms
+        const roleForms = document.querySelectorAll('.role-form');
+        
+        roleForms.forEach((form, index) => {
+            const roleTypeInput = form.querySelector('input[name$="role_type"]');
+            const positionInput = form.querySelector('input[name$="position"]');
+            
+            if (roleTypeInput && positionInput) {
+                roleTypeInput.value = roleTypes[index];
+                positionInput.value = positions[index];
+            }
+        });
+    });
+</script>
+{% endblock %}

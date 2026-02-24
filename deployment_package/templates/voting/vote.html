@@ -1,0 +1,99 @@
+{% extends 'voting/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}ToastyVotes - Vote{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1>{{ vote_session.title }}</h1>
+        <p class="lead">Cast your vote for the best speakers, evaluators, and table topics masters!</p>
+        <p>This voting session will expire on {{ vote_session.expires_at|date:"F j, Y" }} at {{ vote_session.expires_at|time:"g:i A" }}</p>
+    </div>
+</div>
+
+{% if has_voted %}
+<div class="alert alert-success">
+    <h4 class="alert-heading">Thank you for voting!</h4>
+    <p>You've already cast your vote in this session. When the polls close, you'll be able to see the results here.</p>
+</div>
+{% else %}
+<form method="post" novalidate>
+    {% csrf_token %}
+    <div class="row">
+        <!-- Speakers Section -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 vote-section">
+                <div class="card-header">
+                    <h3 class="mb-0">Best Speaker</h3>
+                    <small class="text-muted">Vote for your favorite speaker</small>
+                </div>
+                <div class="card-body">
+                    <div class="custom-radio-group">
+                        {% for radio in form.speaker %}
+                        <div class="custom-radio">
+                            <label>
+                                {{ radio.tag }}
+                                {{ radio.choice_label }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Evaluators Section -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 vote-section">
+                <div class="card-header">
+                    <h3 class="mb-0">Best Evaluator</h3>
+                    <small class="text-muted">Vote for your favorite evaluator</small>
+                </div>
+                <div class="card-body">
+                    <div class="custom-radio-group">
+                        {% for radio in form.evaluator %}
+                        <div class="custom-radio">
+                            <label>
+                                {{ radio.tag }}
+                                {{ radio.choice_label }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Table Topics Section -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 vote-section">
+                <div class="card-header">
+                    <h3 class="mb-0">Best Table Topics Master</h3>
+                    <small class="text-muted">Vote for your favorite table topics master</small>
+                </div>
+                <div class="card-body">
+                    <div class="custom-radio-group">
+                        {% for radio in form.table_topics %}
+                        <div class="custom-radio">
+                            <label>
+                                {{ radio.tag }}
+                                {{ radio.choice_label }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12 text-center">
+            <button type="submit" class="btn btn-primary btn-lg px-5">Submit Vote</button>
+        </div>
+    </div>
+</form>
+{% endif %}
+{% endblock %}

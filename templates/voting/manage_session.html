@@ -1,0 +1,161 @@
+{% extends 'voting/base.html' %}
+{% load static %}
+{% load voting_extras %}
+
+{% block title %}ToastyVotes - Manage Session{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1>Manage Vote Session</h1>
+        <p class="lead">{{ vote_session.title }}</p>
+        <p>
+            <strong>Status:</strong>
+            {% if vote_session.is_expired %}
+                <span class="badge bg-danger">Expired</span>
+            {% elif vote_session.polls_closed %}
+                <span class="badge bg-success">Polls Closed</span>
+            {% else %}
+                <span class="badge bg-primary">Active</span>
+            {% endif %}
+            |
+            <strong>Created:</strong> {{ vote_session.created_at|date:"M d, Y" }} at {{ vote_session.created_at|time:"H:i" }}
+            |
+            <strong>Expires:</strong> {{ vote_session.expires_at|date:"M d, Y" }} at {{ vote_session.expires_at|time:"H:i" }}
+        </p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{% url 'results' vote_session.code %}" class="btn btn-outline-primary">
+            View Results
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">Voting Link</h3>
+            </div>
+            <div class="card-body">
+                <div class="input-group">
+                    <input type="text" class="form-control" value="{{ request.scheme }}://{{ request.get_host }}{% url 'vote' vote_session.code %}" id="voting-link" readonly>
+                    <button class="btn btn-outline-primary" type="button" id="copy-link" 
+                            data-link="{{ request.scheme }}://{{ request.get_host }}{% url 'vote' vote_session.code %}">
+                        Copy Link
+                    </button>
+                </div>
+                <div class="mt-3">
+                    <p class="mb-1">Share this link with users so they can cast their votes.</p>
+                    <p class="text-muted mb-0"><small>This link will be valid for 24 hours from the time of creation.</small></p>
+                </div>
+            </div>
+        </div>
+        
+        {% if not vote_session.polls_closed %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">Session Controls</h3>
+            </div>
+            <div class="card-body">
+                {% csrf_token %}
+                <div class="d-grid">
+                    <button id="close-polls" class="btn btn-danger" 
+                            data-url="{% url 'close_polls' vote_session.code %}"
+                            data-redirect="{% url 'results' vote_session.code %}">
+                        <i class="bi bi-lock-fill"></i> Close Polls and Show Results
+                    </button>
+                </div>
+                <div class="mt-3">
+                    <p class="text-danger mb-0"><strong>Warning:</strong> This action cannot be undone. Once polls are closed, users can no longer vote.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">Participants</h3>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for role_type, roles in vote_session.roles.all|groupby_attr:"role_type" %}
+                        <li class="list-group-item">
+                            <h5>{% if role_type == 'SPEAKER' %}Speakers{% elif role_type == 'EVALUATOR' %}Evaluators{% else %}Table Topics Masters{% endif %}</h5>
+                            <ul class="list-unstyled mb-0">
+                                {% for role in roles %}
+                                    <li>{{ role.position }}. {{ role.name }}</li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Copy to clipboard functionality
+        const copyLinkBtn = document.getElementById('copy-link');
+        if (copyLinkBtn) {
+            copyLinkBtn.addEventListener('click', function() {
+                const linkText = this.dataset.link;
+                navigator.clipboard.writeText(linkText).then(
+                    function() {
+                        const originalText = copyLinkBtn.textContent;
+                        copyLinkBtn.textContent = 'Copied!';
+                        copyLinkBtn.classList.add('btn-success');
+                        copyLinkBtn.classList.remove('btn-outline-primary');
+                        
+                        setTimeout(() => {
+                            copyLinkBtn.textContent = originalText;
+                            copyLinkBtn.classList.remove('btn-success');
+                            copyLinkBtn.classList.add('btn-outline-primary');
+                        }, 2000);
+                    },
+                    function() {
+                        alert('Failed to copy link');
+                    }
+                );
+            });
+        }
+        
+        // Close polls functionality
+        const closeButton = document.getElementById('close-polls');
+        if (closeButton) {
+            closeButton.addEventListener('click', function(e) {
+                if (!confirm('Are you sure you want to close the polls? This cannot be undone.')) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                const url = this.dataset.url;
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = this.dataset.redirect;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error closing polls:', error);
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

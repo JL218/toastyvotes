@@ -1,0 +1,110 @@
+{% extends 'voting/base.html' %}
+{% load static %}
+
+{% block title %}ToastyVotes - Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1>Welcome, {{ user.first_name }}</h1>
+        <p class="lead">
+            {% if is_admin %}
+                Manage your vote sessions and view results.
+            {% else %}
+                Track your votes and view results.
+            {% endif %}
+        </p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        {% if is_admin %}
+            <a href="{% url 'create_session' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Create New Vote Session
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if latest_active_session %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h3 class="card-title">Active Voting Session</h3>
+                <p class="lead">{{ latest_active_session.title }}</p>
+                <p>
+                    {% if has_voted_in_active %}
+                        You have already cast your votes in this session.
+                    {% else %}
+                        A new voting session is open and waiting for your votes!
+                    {% endif %}
+                </p>
+                <a href="{% url 'vote' latest_active_session.code %}" class="btn btn-lg btn-primary">
+                    <i class="bi bi-check2-circle"></i>
+                    {% if has_voted_in_active %}View Results{% else %}Vote Now{% endif %}
+                </a>
+                <p class="mt-2 text-muted">
+                    <small>Expires: {{ latest_active_session.expires_at|date:"M d, Y" }} at {{ latest_active_session.expires_at|time:"H:i" }}</small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-12">
+        {% if vote_sessions %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">{% if is_admin %}Your Vote Sessions{% else %}Your Voting History{% endif %}</h3>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for session in vote_sessions %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">{{ session.title }}</h5>
+                                    <p class="mb-0 text-muted">
+                                        <small>
+                                            Created: {{ session.created_at|date:"M d, Y" }} at {{ session.created_at|time:"H:i" }} | 
+                                            Expires: {{ session.expires_at|date:"M d, Y" }} at {{ session.expires_at|time:"H:i" }}
+                                        </small>
+                                    </p>
+                                </div>
+                                <div>
+                                    {% if is_admin %}
+                                        {% if not session.polls_closed %}
+                                            <a href="{% url 'manage_session' session.code %}" class="btn btn-outline-primary btn-sm me-2">
+                                                Manage
+                                            </a>
+                                        {% endif %}
+                                        <a href="{% url 'results' session.code %}" class="btn {% if session.polls_closed %}btn-primary{% else %}btn-outline-secondary{% endif %} btn-sm">
+                                            {% if session.polls_closed %}View Results{% else %}Results Preview{% endif %}
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'vote' session.code %}" class="btn btn-outline-primary btn-sm me-2">
+                                            {% if session.polls_closed %}View Results{% else %}Vote Now{% endif %}
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                {% if is_admin %}
+                    <h4 class="alert-heading">No vote sessions yet!</h4>
+                    <p>Get started by creating your first vote session.</p>
+                    <hr>
+                    <a href="{% url 'create_session' %}" class="btn btn-primary">Create Vote Session</a>
+                {% else %}
+                    <h4 class="alert-heading">No voting history yet!</h4>
+                    <p>Once you participate in a vote, it will appear here.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
