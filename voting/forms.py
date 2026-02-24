@@ -34,13 +34,6 @@ class VoteSessionForm(forms.ModelForm):
         }
 
 
-class RoleFormSet(forms.BaseModelFormSet):
-    """Formset for adding roles to a vote session"""
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.queryset = Role.objects.none()
-
-
 class RoleForm(forms.ModelForm):
     """Form for adding a role"""
     class Meta:
@@ -48,44 +41,37 @@ class RoleForm(forms.ModelForm):
         fields = ('name', 'role_type', 'position')
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Person Name'}),
-            'role_type': forms.Select(attrs={'class': 'form-select'}),
-            'position': forms.Select(attrs={'class': 'form-select'}, choices=[(1, '1'), (2, '2')])
+            'role_type': forms.HiddenInput(),
+            'position': forms.HiddenInput(),
         }
 
 
 class VoteForm(forms.Form):
-    """Form for submitting votes"""
-    speaker = forms.ModelChoiceField(
-        queryset=None,
-        widget=forms.RadioSelect,
-        required=True,
-        empty_label=None
-    )
-    evaluator = forms.ModelChoiceField(
-        queryset=None,
-        widget=forms.RadioSelect,
-        required=True,
-        empty_label=None
-    )
-    table_topics = forms.ModelChoiceField(
-        queryset=None,
-        widget=forms.RadioSelect,
-        required=True,
-        empty_label=None,
-        label='Table Topics Master'
-    )
+    """Dynamic form for submitting votes — only includes categories that have participants"""
+
+    CATEGORY_CONFIG = {
+        'SPEAKER': {'label': 'Best Speaker', 'field_name': 'speaker'},
+        'EVALUATOR': {'label': 'Best Evaluator', 'field_name': 'evaluator'},
+        'TABLE_TOPICS': {'label': 'Best Table Topics Speaker', 'field_name': 'table_topics'},
+    }
 
     def __init__(self, vote_session, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['speaker'].queryset = Role.objects.filter(
-            vote_session=vote_session, 
-            role_type='SPEAKER'
-        )
-        self.fields['evaluator'].queryset = Role.objects.filter(
-            vote_session=vote_session, 
-            role_type='EVALUATOR'
-        )
-        self.fields['table_topics'].queryset = Role.objects.filter(
-            vote_session=vote_session, 
-            role_type='TABLE_TOPICS'
-        )
+        self.vote_session = vote_session
+        self.active_categories = []
+
+        for role_type, config in self.CATEGORY_CONFIG.items():
+            qs = Role.objects.filter(vote_session=vote_session, role_type=role_type)
+            if qs.exists():
+                self.fields[config['field_name']] = forms.ModelChoiceField(
+                    queryset=qs,
+                    widget=forms.RadioSelect,
+                    required=True,
+                    empty_label=None,
+                    label=config['label'],
+                )
+                self.active_categories.append({
+                    'field_name': config['field_name'],
+                    'label': config['label'],
+                    'role_type': role_type,
+                })

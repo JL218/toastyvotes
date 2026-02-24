@@ -17,7 +17,7 @@ class Role(models.Model):
     ROLE_TYPES = [
         ('SPEAKER', 'Speaker'),
         ('EVALUATOR', 'Evaluator'),
-        ('TABLE_TOPICS', 'Table Topics Master'),
+        ('TABLE_TOPICS', 'Table Topics Speaker'),
     ]
     
     name = models.CharField(max_length=100)

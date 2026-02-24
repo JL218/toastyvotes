@@ -83,7 +83,7 @@
                 <ul class="list-group list-group-flush">
                     {% for role_type, roles in vote_session.roles.all|groupby_attr:"role_type" %}
                         <li class="list-group-item">
-                            <h5>{% if role_type == 'SPEAKER' %}Speakers{% elif role_type == 'EVALUATOR' %}Evaluators{% else %}Table Topics Masters{% endif %}</h5>
+                            <h5>{% if role_type == 'SPEAKER' %}Prepared Speakers{% elif role_type == 'EVALUATOR' %}Evaluators{% else %}Table Topics Speakers{% endif %}</h5>
                             <ul class="list-unstyled mb-0">
                                 {% for role in roles %}
                                     <li>{{ role.position }}. {{ role.name }}</li>

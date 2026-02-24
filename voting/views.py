@@ -6,9 +6,8 @@ from django.utils import timezone
 from django.http import HttpResponseForbidden, HttpResponse
 from django.db.models import Count
 from django.db import transaction
-from django.forms import modelformset_factory
 from .models import VoteSession, Role, Vote, AdminProfile
-from .forms import UserRegistrationForm, VoteSessionForm, RoleForm, VoteForm
+from .forms import UserRegistrationForm, VoteSessionForm, VoteForm
 import json
 
 
@@ -77,54 +76,51 @@ def create_vote_session(request):
     if not is_admin:
         return HttpResponseForbidden("You must be an admin to create vote sessions.")
     
-    # Create formset for roles
-    RoleFormSet = modelformset_factory(Role, form=RoleForm, extra=6, max_num=6)
+    # Category definitions for the form
+    categories = [
+        {'key': 'SPEAKER', 'label': 'Prepared Speakers'},
+        {'key': 'EVALUATOR', 'label': 'Evaluators'},
+        {'key': 'TABLE_TOPICS', 'label': 'Table Topics Speakers'},
+    ]
     
     if request.method == 'POST':
         session_form = VoteSessionForm(request.POST)
-        role_formset = RoleFormSet(request.POST, prefix='roles')
         
-        if session_form.is_valid() and role_formset.is_valid():
-            with transaction.atomic():
-                # Save the vote session
-                vote_session = session_form.save(commit=False)
-                vote_session.created_by = request.user
-                vote_session.expires_at = timezone.now() + timezone.timedelta(hours=24)
-                vote_session.save()
-                
-                # Create roles - 2 of each type
-                role_types = ['SPEAKER', 'EVALUATOR', 'TABLE_TOPICS']
-                positions = [1, 2]
-                
-                # Process formset data
-                instances = role_formset.save(commit=False)
-                for i, instance in enumerate(instances):
-                    role_type_index = i // 2  # 0, 0, 1, 1, 2, 2
-                    position = (i % 2) + 1  # 1, 2, 1, 2, 1, 2
-                    
-                    instance.vote_session = vote_session
-                    instance.role_type = role_types[role_type_index]
-                    instance.position = position
-                    instance.save()
+        if session_form.is_valid():
+            # Collect participant names from POST data
+            role_data = []  # list of (role_type, position, name)
+            for cat in categories:
+                names = request.POST.getlist(f"participant_{cat['key']}")
+                for pos, name in enumerate(names, start=1):
+                    name = name.strip()
+                    if name:
+                        role_data.append((cat['key'], pos, name))
             
-            messages.success(request, f'Vote session created! Share this link: {request.build_absolute_uri(reverse("vote", kwargs={"code": vote_session.code}))}') 
-            return redirect('dashboard')
+            if not role_data:
+                messages.error(request, 'Please add at least one participant.')
+            else:
+                with transaction.atomic():
+                    vote_session = session_form.save(commit=False)
+                    vote_session.created_by = request.user
+                    vote_session.expires_at = timezone.now() + timezone.timedelta(hours=24)
+                    vote_session.save()
+                    
+                    for role_type, position, name in role_data:
+                        Role.objects.create(
+                            vote_session=vote_session,
+                            role_type=role_type,
+                            position=position,
+                            name=name,
+                        )
+                
+                messages.success(request, f'Vote session created! Share this link: {request.build_absolute_uri(reverse("vote", kwargs={"code": vote_session.code}))}') 
+                return redirect('dashboard')
     else:
         session_form = VoteSessionForm()
-        role_formset = RoleFormSet(queryset=Role.objects.none(), prefix='roles')
-    
-    # Pre-fill form labels to match expected roles
-    role_forms = role_formset.forms
-    role_labels = [
-        'Speaker 1', 'Speaker 2',
-        'Evaluator 1', 'Evaluator 2',
-        'Table Topics Master 1', 'Table Topics Master 2'
-    ]
     
     context = {
         'session_form': session_form,
-        'role_formset': role_formset,
-        'role_forms': zip(role_forms, role_labels) if len(role_forms) == 6 else None
+        'categories': categories,
     }
     return render(request, 'voting/create_session.html', context)
 
@@ -155,11 +151,12 @@ def vote_view(request, code):
         form = VoteForm(vote_session, request.POST)
         if form.is_valid():
             with transaction.atomic():
-                # Create votes for each category
-                for category, role_id in form.cleaned_data.items():
+                # Create votes for each active category
+                for cat in form.active_categories:
+                    role = form.cleaned_data[cat['field_name']]
                     vote = Vote(
                         user=request.user,
-                        role=role_id,
+                        role=role,
                         vote_session=vote_session
                     )
                     vote.save()
@@ -188,10 +185,12 @@ def results_view(request, code):
         messages.warning(request, 'Polls are still open. Results are not available yet.')
         return redirect('vote', code=code)
     
-    # Get votes for each role type
+    # Get votes for each role type — only include categories that have participants
     results = {}
     for role_type, role_name in Role.ROLE_TYPES:
         roles = Role.objects.filter(vote_session=vote_session, role_type=role_type)
+        if not roles.exists():
+            continue
         votes = Vote.objects.filter(role__in=roles).values('role__name').annotate(count=Count('id')).order_by('-count')
         
         # Find winners (could be multiple in case of a tie)
@@ -268,3 +267,8 @@ def toggle_results(request, code):
     vote_session.save()
     
     return HttpResponse(json.dumps({'show_results': vote_session.show_results}), content_type='application/json')
+
+
+def timer_view(request):
+    """Speech timer tool view"""
+    return render(request, 'voting/timer.html')
