@@ -5,9 +5,10 @@
 {% block extra_css %}
 <style>
     :root {
-        --primary: #004165;
+        --primary: #FF7A00;
+        --primary-dark: #E66C00;
         --accent: #CD202C;
-        --gold: #f2df74;
+        --gold: #FF9334;
         --bg: #f4f7f6;
         --text: #333;
         --card-bg: #ffffff;
@@ -88,8 +89,8 @@
     }
 
     #btn-reset:hover {
-        color: var(--accent);
-        border-color: var(--accent);
+        color: var(--primary-dark);
+        border-color: var(--primary-dark);
     }
 
     #question-display {
@@ -114,7 +115,7 @@
     #topic-badge {
         display: inline-block;
         background-color: var(--gold);
-        color: var(--primary);
+        color: #fff;
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 0.8rem;
