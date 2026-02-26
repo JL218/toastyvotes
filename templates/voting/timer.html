@@ -115,6 +115,175 @@
         line-height: 1;
     }
 
+    /* Stop Button */
+    .stop-btn {
+        position: absolute;
+        bottom: 8vh;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 16px 48px;
+        font-size: 24px;
+        font-weight: bold;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        border: 2px solid rgba(255,255,255,0.6);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s;
+        z-index: 10000;
+    }
+
+    .stop-btn:hover {
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+
+    /* Name Prompt Modal */
+    #name-modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 10001;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 30px 40px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        text-align: center;
+        max-width: 420px;
+        width: 90%;
+    }
+
+    .modal-content h3 { margin-top: 0; }
+
+    .modal-content input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #aaa;
+        border-radius: 4px;
+        margin: 12px 0;
+        box-sizing: border-box;
+    }
+
+    .modal-summary {
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 10px;
+    }
+
+    .modal-summary strong { color: #222; }
+
+    .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 15px;
+    }
+
+    .modal-actions button {
+        padding: 10px 24px;
+        font-size: 15px;
+        font-weight: bold;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .btn-save {
+        background-color: #004165;
+        color: white;
+    }
+
+    .btn-save:hover { background-color: #002d47; }
+
+    .btn-skip {
+        background-color: #e0e0e0;
+        color: #333;
+    }
+
+    .btn-skip:hover { background-color: #ccc; }
+
+    /* Speaker Log */
+    #speaker-log {
+        max-width: 700px;
+        margin: 30px auto;
+    }
+
+    #speaker-log h3 {
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    .log-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    .log-table th, .log-table td {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        text-align: center;
+    }
+
+    .log-table th {
+        background-color: #004165;
+        color: white;
+        font-weight: 600;
+    }
+
+    .log-table tr:nth-child(even) { background-color: #f8f8f8; }
+
+    .status-green { color: #00a000; font-weight: bold; }
+    .status-yellow { color: #b8a000; font-weight: bold; }
+    .status-red { color: #d00; font-weight: bold; }
+    .status-overtime { color: #d00; font-weight: bold; font-style: italic; }
+
+    .log-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 15px;
+    }
+
+    .log-actions button {
+        padding: 8px 20px;
+        font-size: 14px;
+        font-weight: bold;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .btn-download {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .btn-download:hover { background-color: #218838; }
+
+    .btn-clear {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .btn-clear:hover { background-color: #c82333; }
+
+    .log-empty {
+        text-align: center;
+        color: #999;
+        font-style: italic;
+        padding: 20px;
+    }
+
     /* Overtime Styles */
     .overtime-text {
         color: red !important;
@@ -134,10 +303,10 @@
     <h1>Toasty Timer</h1>
     
     <div class="presets">
-        <button class="preset-btn" onclick="setPreset('01:00', '01:30', '02:00')">Table Topics</button>
-        <button class="preset-btn" onclick="setPreset('04:00', '05:00', '06:00')">Ice-Breaker</button>
-        <button class="preset-btn" onclick="setPreset('05:00', '06:00', '07:00')">Prepared Speech</button>
-        <button class="preset-btn" onclick="setPreset('02:00', '02:30', '03:00')">Evaluator</button>
+        <button class="preset-btn" onclick="setPreset('01:00', '01:30', '02:00', 'Table Topics')">Table Topics</button>
+        <button class="preset-btn" onclick="setPreset('04:00', '05:00', '06:00', 'Ice-Breaker')">Ice-Breaker</button>
+        <button class="preset-btn" onclick="setPreset('05:00', '06:00', '07:00', 'Prepared Speech')">Prepared Speech</button>
+        <button class="preset-btn" onclick="setPreset('02:00', '02:30', '03:00', 'Evaluator')">Evaluator</button>
     </div>
 
     <p>Enter target times in <strong>MM:SS</strong> format.</p>
@@ -160,6 +329,32 @@
 
 <div id="timer-screen">
     <div id="timer-display">00:00</div>
+    <button class="stop-btn" onclick="stopTimer()">Stop</button>
+</div>
+
+<!-- Name Prompt Modal -->
+<div id="name-modal">
+    <div class="modal-content">
+        <h3>Log This Speech</h3>
+        <div class="modal-summary" id="modal-summary"></div>
+        <input type="text" id="speaker-name" placeholder="Enter speaker name" autofocus>
+        <div class="modal-actions">
+            <button class="btn-save" onclick="saveEntry()">Save</button>
+            <button class="btn-skip" onclick="skipEntry()">Skip</button>
+        </div>
+    </div>
+</div>
+
+<!-- Speaker Log -->
+<div id="speaker-log">
+    <h3>Speaker Log</h3>
+    <div id="log-content">
+        <p class="log-empty">No speakers recorded yet. Start a timer and press Stop to log a speaker.</p>
+    </div>
+    <div class="log-actions" id="log-actions" style="display: none;">
+        <button class="btn-download" onclick="downloadCSV()">Download CSV</button>
+        <button class="btn-clear" onclick="clearLog()">Clear Log</button>
+    </div>
 </div>
 {% endblock %}
 
@@ -174,12 +369,16 @@
     let lowSec, midSec, highSec;
     let startTime;
     let animationFrameId;
+    let currentSpeechType = 'Custom';
+    let stoppedElapsed = 0;
+    let speakerLog = [];
 
     // Function to handle preset buttons
-    function setPreset(low, mid, high) {
+    function setPreset(low, mid, high, speechType) {
         document.getElementById('low-time').value = low;
         document.getElementById('mid-time').value = mid;
         document.getElementById('high-time').value = high;
+        currentSpeechType = speechType || 'Custom';
     }
 
     function parseTimeToSeconds(timeStr) {
@@ -201,6 +400,14 @@
         return `rgb(${r}, ${g}, ${b})`;
     }
 
+    function getTimerStatus(elapsed) {
+        if (elapsed < lowSec) return { label: 'Under Time', cssClass: 'status-green' };
+        if (elapsed < midSec) return { label: 'Green', cssClass: 'status-green' };
+        if (elapsed < highSec) return { label: 'Yellow', cssClass: 'status-yellow' };
+        if (elapsed < highSec + 30) return { label: 'Red', cssClass: 'status-red' };
+        return { label: 'Overtime', cssClass: 'status-overtime' };
+    }
+
     function startTimer() {
         // Read inputs
         lowSec = parseTimeToSeconds(document.getElementById('low-time').value);
@@ -213,6 +420,7 @@
         }
 
         document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('speaker-log').style.display = 'none';
         const timerScreen = document.getElementById('timer-screen');
         timerScreen.style.display = 'flex';
         
@@ -222,6 +430,119 @@
 
         startTime = Date.now();
         updateTimer();
+    }
+
+    function stopTimer() {
+        cancelAnimationFrame(animationFrameId);
+        stoppedElapsed = (Date.now() - startTime) / 1000;
+
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+        }
+
+        // Hide timer screen
+        document.getElementById('timer-screen').style.display = 'none';
+        document.getElementById('timer-display').classList.remove('overtime-text');
+        document.getElementById('timer-screen').style.backgroundColor = 'rgb(255, 255, 255)';
+
+        // Show name modal
+        const status = getTimerStatus(stoppedElapsed);
+        document.getElementById('modal-summary').innerHTML = 
+            `<strong>${currentSpeechType}</strong> &mdash; ${formatTime(stoppedElapsed)} &mdash; <span class="${status.cssClass}">${status.label}</span>`;
+        document.getElementById('speaker-name').value = '';
+        const modal = document.getElementById('name-modal');
+        modal.style.display = 'flex';
+
+        // Focus the name input after a brief delay (fullscreen exit takes a moment)
+        setTimeout(() => document.getElementById('speaker-name').focus(), 100);
+    }
+
+    function saveEntry() {
+        const name = document.getElementById('speaker-name').value.trim() || 'Unknown';
+        const status = getTimerStatus(stoppedElapsed);
+
+        speakerLog.push({
+            name: name,
+            speechType: currentSpeechType,
+            time: formatTime(stoppedElapsed),
+            seconds: Math.floor(stoppedElapsed),
+            status: status.label,
+            statusClass: status.cssClass
+        });
+
+        document.getElementById('name-modal').style.display = 'none';
+        renderLog();
+        showSetupScreen();
+    }
+
+    function skipEntry() {
+        document.getElementById('name-modal').style.display = 'none';
+        showSetupScreen();
+    }
+
+    function showSetupScreen() {
+        document.getElementById('setup-screen').style.display = 'block';
+        document.getElementById('speaker-log').style.display = 'block';
+    }
+
+    function renderLog() {
+        const logContent = document.getElementById('log-content');
+        const logActions = document.getElementById('log-actions');
+
+        if (speakerLog.length === 0) {
+            logContent.innerHTML = '<p class="log-empty">No speakers recorded yet. Start a timer and press Stop to log a speaker.</p>';
+            logActions.style.display = 'none';
+            return;
+        }
+
+        let html = '<table class="log-table"><thead><tr>';
+        html += '<th>#</th><th>Name</th><th>Speech Type</th><th>Time</th><th>Status</th>';
+        html += '</tr></thead><tbody>';
+
+        speakerLog.forEach((entry, i) => {
+            html += `<tr>`;
+            html += `<td>${i + 1}</td>`;
+            html += `<td>${escapeHtml(entry.name)}</td>`;
+            html += `<td>${escapeHtml(entry.speechType)}</td>`;
+            html += `<td>${entry.time}</td>`;
+            html += `<td class="${entry.statusClass}">${entry.status}</td>`;
+            html += `</tr>`;
+        });
+
+        html += '</tbody></table>';
+        logContent.innerHTML = html;
+        logActions.style.display = 'flex';
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function downloadCSV() {
+        if (speakerLog.length === 0) return;
+
+        let csv = '#,Name,Speech Type,Time,Status\n';
+        speakerLog.forEach((entry, i) => {
+            csv += `${i + 1},"${entry.name}","${entry.speechType}",${entry.time},${entry.status}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const date = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `toastyvotes-timer-log-${date}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function clearLog() {
+        if (speakerLog.length > 0 && !confirm('Clear all logged speakers?')) return;
+        speakerLog = [];
+        renderLog();
     }
 
     function updateTimer() {
@@ -271,18 +592,27 @@
         animationFrameId = requestAnimationFrame(updateTimer);
     }
 
-    // Exit timer on Escape key
+    // Keyboard shortcuts
     document.addEventListener('keydown', function(e) {
+        // Escape stops the timer (same as Stop button)
         if (e.key === 'Escape') {
             const timerScreen = document.getElementById('timer-screen');
             if (timerScreen.style.display === 'flex') {
-                cancelAnimationFrame(animationFrameId);
-                timerScreen.style.display = 'none';
-                document.getElementById('setup-screen').style.display = 'block';
-                document.getElementById('timer-display').classList.remove('overtime-text');
-                if (document.exitFullscreen) {
-                    document.exitFullscreen().catch(() => {});
-                }
+                stopTimer();
+                return;
+            }
+            // If modal is open, skip the entry
+            const modal = document.getElementById('name-modal');
+            if (modal.style.display === 'flex') {
+                skipEntry();
+                return;
+            }
+        }
+        // Enter saves entry when modal is open
+        if (e.key === 'Enter') {
+            const modal = document.getElementById('name-modal');
+            if (modal.style.display === 'flex') {
+                saveEntry();
             }
         }
     });
