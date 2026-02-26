@@ -4,6 +4,16 @@
 
 {% block extra_css %}
 <style>
+    /* Fill viewport, center content, no scroll */
+    main.container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
+
     :root {
         --primary: #FF7A00;
         --primary-dark: #E66C00;
