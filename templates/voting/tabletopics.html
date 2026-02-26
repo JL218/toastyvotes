@@ -1,0 +1,1008 @@
+{% extends 'voting/base.html' %}
+
+{% block title %}Table Topics Master - ToastyVotes{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary: #004165;
+        --accent: #CD202C;
+        --gold: #f2df74;
+        --bg: #f4f7f6;
+        --text: #333;
+        --card-bg: #ffffff;
+    }
+
+    .tt-container {
+        background-color: var(--card-bg);
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        max-width: 800px;
+        width: 100%;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .tt-container h1 {
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+    }
+
+    p.subtitle {
+        color: #666;
+        margin-bottom: 2rem;
+    }
+
+    .controls {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+    }
+
+    .controls select {
+        padding: 12px 20px;
+        border-radius: 8px;
+        border: 2px solid #ddd;
+        font-size: 1rem;
+        background-color: white;
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+
+    .controls select:focus {
+        border-color: var(--primary);
+    }
+
+    .controls button, #btn-reset {
+        padding: 12px 24px;
+        border-radius: 8px;
+        border: none;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.1s, opacity 0.2s;
+    }
+
+    #btn-generate {
+        background-color: var(--primary);
+        color: white;
+    }
+
+    #btn-generate:hover {
+        opacity: 0.9;
+    }
+
+    #btn-generate:active {
+        transform: scale(0.98);
+    }
+
+    #btn-reset {
+        background-color: transparent;
+        color: #999;
+        border: 1px solid #ddd;
+        font-size: 0.9rem;
+    }
+
+    #btn-reset:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+    }
+
+    #question-display {
+        min-height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 20px;
+        padding: 20px;
+        border-top: 2px solid #eee;
+    }
+
+    #question-text {
+        font-size: 1.8rem;
+        font-weight: 500;
+        color: var(--primary);
+        line-height: 1.4;
+        opacity: 0;
+        transition: opacity 0.5s ease-in;
+    }
+
+    #topic-badge {
+        display: inline-block;
+        background-color: var(--gold);
+        color: var(--primary);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+        visibility: hidden;
+    }
+
+    .fade-in {
+        opacity: 1 !important;
+    }
+
+    .error-msg {
+        color: var(--accent);
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tt-container">
+    <h1>Table Topics Master</h1>
+    <p class="subtitle">Select a theme and get a unique question. (Questions reset every 60 mins)</p>
+
+    <div class="controls">
+        <select id="topic-select">
+            <option value="all">🎲 Surprise Me (Any Topic)</option>
+        </select>
+        <button id="btn-generate">Get Random Question</button>
+    </div>
+
+    <div id="question-display">
+        <div>
+            <span id="topic-badge">Topic</span>
+            <div id="question-text">Ready to speak?</div>
+        </div>
+    </div>
+
+    <button id="btn-reset">Reset History</button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // --- 1. The Data: 25 Categories, 10 Questions each ---
+    const topicsData = {
+        "Adventure": [
+            "If you could travel to any place in the universe, describe where you would go and why.",
+            "Describe the most adventurous thing you have ever done and how it changed you.",
+            "If you were an explorer in the 15th century, what specifically would you be hoping to discover?",
+            "Explain what the word 'adventure' means to you in the context of your daily life.",
+            "What factors would you consider if you were offered the chance to live on another planet?",
+            "Tell us about a time you got lost and what you discovered during that experience.",
+            "Compare the appeal of exploring the deep ocean versus exploring outer space.",
+            "Describe the biggest risk you have ever taken and the outcome.",
+            "If you had to survive in the wilderness for a week, explain why you would choose three specific items to bring.",
+            "Paint a picture of your ideal road trip, including who is with you and where you are going."
+        ],
+        "Business": [
+            "If you started a business today, describe what it would be and the problem it would solve.",
+            "Discuss the validity of the phrase 'the customer is always right' in today's world.",
+            "What do you believe is the most common mistake businesses make today?",
+            "Compare the pros and cons of working for yourself versus working for a large corporation.",
+            "Explain the key factors that you think make a product successful.",
+            "Demonstrate how you would sell this pen to the room right now.",
+            "Describe your strategy for handling a difficult or unhappy client.",
+            "Discuss whether it is more important to work hard or to work smart, and give examples.",
+            "Predict a job that currently exists but will likely disappear in the next 20 years.",
+            "Describe a business mogul you admire and the traits that make them successful."
+        ],
+        "Childhood": [
+            "Share a specific memory from your childhood that defines who you are today.",
+            "If you could go back and give your 10-year-old self advice, what would you say?",
+            "Describe your favorite toy growing up and why it meant so much to you.",
+            "What was the most mischievous thing you did as a child?",
+            "Explain how your childhood career aspirations differ from your current reality.",
+            "Describe the neighborhood you grew up in and how it has changed.",
+            "What is one childhood fear you have overcome, and how did you do it?",
+            "Tell us about a teacher from your childhood who left a lasting impact on you.",
+            "If you could relive one day from your childhood, which day would it be and why?",
+            "How has your relationship with your parents evolved since you were a child?"
+        ],
+        "Communication": [
+            "Compare the intimacy of a phone call versus a text message.",
+            "Describe the specific behaviors that make a person a 'good listener'.",
+            "Tell us a story about a time you were misunderstood and how you resolved it.",
+            "If you wrote a book about your life, what would the title be and what is the synopsis?",
+            "Explain your feelings toward public speaking: is it a fear, a thrill, or something else?",
+            "Describe your approach to handling difficult or awkward conversations.",
+            "Retell the most captivating story someone has ever shared with you.",
+            "Discuss whether society is losing the ability to communicate face-to-face.",
+            "If you could have a conversation with anyone in history, explain who it would be and what you would discuss.",
+            "Explain why you believe storytelling is such a powerful tool for humans."
+        ],
+        "Community": [
+            "Explain why volunteering is important to the health of a society.",
+            "If you could start a charity, describe the cause it would support and why.",
+            "Define what 'community' means to you personally.",
+            "Describe a random act of kindness you have performed or received.",
+            "Suggest three practical ways we can build stronger connections in our neighborhoods.",
+            "Discuss whether it is more impactful to donate money or time to a cause.",
+            "Describe an unsung hero in your community who deserves more recognition.",
+            "Discuss a social issue you care deeply about and why it resonates with you.",
+            "How do you go about making a stranger feel welcome in a new environment?",
+            "If you had a million dollars to give away, explain exactly how you would distribute it."
+        ],
+        "Creativity": [
+            "If you could paint a picture that represents your soul, describe what it would look like.",
+            "Discuss the statement: 'Life imitates art more than art imitates life.'",
+            "If you could instantly master any musical instrument, which one would you choose and what song would you play first?",
+            "Describe a book or movie that fundamentally changed your perspective on life.",
+            "Debate the fine line between graffiti as art and graffiti as vandalism.",
+            "If you could have dinner with any artist (dead or alive), tell us who and why.",
+            "Describe the most creative project or solution you have worked on recently.",
+            "Discuss the idea that one must be unhappy to create great art.",
+            "If you could star in any movie genre, explain which role you would play.",
+            "Give us your personal definition of 'beauty' in the modern world."
+        ],
+        "Culture": [
+            "Describe a tradition from your childhood that you still practice today.",
+            "If you could experience life in any ancient civilization, explain which one you would choose.",
+            "Explain how your specific culture defines the concept of 'success'.",
+            "Describe a cultural custom from another country that you wish your country would adopt.",
+            "Tell us about a holiday celebration that holds deep meaning for you.",
+            "Discuss the importance of preserving dying languages in a globalized world.",
+            "Describe the most surprising cultural difference you encountered while traveling.",
+            "How would you explain your culture to an alien who has just landed on Earth?",
+            "Debate whether traditions act more as an anchor or as a barrier to progress.",
+            "Describe a family tradition you hope to pass down to future generations."
+        ],
+        "Digital": [
+            "Discuss the pros and cons of anonymity on the internet.",
+            "Describe how your daily life would change if the internet suddenly disappeared.",
+            "At what age do you think children should be allowed on social media and why?",
+            "Describe the most positive interaction you have ever had online.",
+            "Share your experience with\u2014or thoughts on\u2014doing a 'digital detox'.",
+            "Explain the psychological impact of 'likes' and engagement metrics on self-esteem.",
+            "Discuss whether privacy is truly possible in the digital age.",
+            "Describe the one app you cannot live without and how it helps you.",
+            "Compare the value of online friendships versus in-person friendships.",
+            "How would you describe the concept of the internet to someone from the year 1900?"
+        ],
+        "Dreams": [
+            "Describe your dream job and what a typical day would look like.",
+            "If money were no object, explain exactly how you would spend your time.",
+            "Talk about a childhood dream you have let go of and why.",
+            "Describe the most vivid dream you remember having while sleeping.",
+            "What is the one major achievement you want to accomplish before you die?",
+            "If you could act on any talent in the world, describe what you would do with it.",
+            "Explain your definition of the 'American Dream' (or your country's equivalent) and if it still exists.",
+            "Discuss your theory on why we dream and what dreams might mean.",
+            "Describe a dream or goal you have yet to fulfill but are working toward.",
+            "If you could live anywhere in the world, describe the location and why it appeals to you."
+        ],
+        "Education": [
+            "Describe your favorite subject in school and why it captured your interest.",
+            "If you could learn any new language instantly, explain which one and why.",
+            "Critique how well the current school system prepares children for the real world.",
+            "Describe a valuable lesson you learned outside of a classroom.",
+            "If you returned to college today, explain what you would study and why.",
+            "Tell us about your favorite teacher and the specific qualities that made them great.",
+            "Compare the effectiveness of online learning versus traditional classroom learning.",
+            "Describe a historical event you wish you knew more about.",
+            "Discuss whether grades are an accurate measurement of intelligence.",
+            "Share one interesting fact or skill you have learned recently."
+        ],
+        "Entertainment": [
+            "If you could be a character in any TV show, who would you be and why?",
+            "Describe a movie that you believe is overrated and explain your reasoning.",
+            "If you were a professional wrestler, what would your entrance theme song be?",
+            "Explain why you prefer reading the book or watching the movie adaptation.",
+            "If you could direct a documentary about anything, what subject would you cover?",
+            "Describe the best concert or live performance you have ever attended.",
+            "If you could have a cameo in any video game, which world would you want to inhabit?",
+            "Discuss whether reality TV has a negative or positive impact on society.",
+            "Who is a celebrity you used to admire but have changed your mind about?",
+            "If you could host a talk show, who would be your first three guests?"
+        ],
+        "Ethics": [
+            "Describe a scenario where you believe it is acceptable to tell a lie.",
+            "What is one moral rule you personally will never break?",
+            "If you found a wallet with $1,000 and no ID, walk us through exactly what you would do.",
+            "Debate the philosophical idea that 'the ends justify the means'.",
+            "Define what 'integrity' looks like in a professional setting.",
+            "Discuss whether it is more important to be kind or to be right.",
+            "If you could change one law in your country, explain which one and why.",
+            "Explain your perspective on the concept of karma.",
+            "Describe a cause you are passionate about defending and why it matters.",
+            "Discuss the ethical dilemma of saving one loved one versus five strangers.",
+            "If you could save the life of one loved one or five innocent strangers, explain how you would make that choice.",
+            "Analyze whether an act of charity can truly be called 'selfless' if it makes the giver feel good.",
+            "If a prison system had a 100% rehabilitation rate but required erasing the criminal's memory, argue whether this is justice or violation.",
+            "If you found a box containing the absolute truth about every historical event, describe what you would do with it and why.",
+            "Compare the morality of doing the wrong thing for the right reason versus doing the right thing for the wrong reason.",
+            "Predict the immediate and long-term consequences if lying became impossible for 24 hours globally.",
+            "Discuss the extent of our moral obligation to help others versus the freedom to prioritize ourselves.",
+            "If you could commit one crime without hurting anyone physically and without getting caught, describe what you might do and why.",
+            "Elaborate on whether you believe humanity is inherently good and corrupted by society, or inherently selfish and tamed by society.",
+            "If you could view a 'morality score' above everyone's head, explain how that would change your interactions with people.",
+            "Describe your thought process if you saw someone shoplifting food from a large corporate grocery store.",
+            "Evaluate the ethics of using animals for medical research if it guarantees a cure for a major human disease.",
+            "Determine how a self-driving car should be programmed to choose between saving its passenger or saving a pedestrian.",
+            "If you could cheat on a test that determines your future with zero chance of being caught, explain what would stop you (or push you to do it).",
+            "Describe a specific situation where honesty is actually cruel and a lie is the compassionate choice.",
+            "If you found a wallet with $1,000 and the ID of a wealthy billionaire inside, walk us through your decision-making process.",
+            "Discuss the fairness of the current generation making sacrifices for a future generation they will never meet.",
+            "Analyze whether the intention behind an action matters more than the actual outcome.",
+            "If you could erase a bad deed from your past by sacrificing a good memory, explain which you would choose.",
+            "Debate the morality of extreme wealth existing alongside extreme poverty.",
+            "To what extent should parents be held legally responsible for the crimes of their minor children?",
+            "If you knew a friend was cheating on their partner, explain how you would handle the situation.",
+            "Discuss the ethical implications of cloning a beloved pet that has passed away.",
+            "Describe the criteria for when one country should intervene in the human rights affairs of another.",
+            "Differentiate between revenge as a form of justice versus revenge as an emotional reaction.",
+            "If you could bestow one moral virtue on every human being, explain which one would have the biggest impact.",
+            "Describe a scenario where breaking a promise is the morally right thing to do.",
+            "Discuss whether 'good' and 'evil' are objective truths or human constructs.",
+            "If a pill could make you perfectly ethical but removed your passion, explain why you would or would not take it.",
+            "Compare the failure of trying to do good versus the 'success' of doing nothing at all.",
+            "Discuss whether we should judge historical figures by today's standards or the standards of their time.",
+            "If you knew the date of your death, explain how your ethical behavior might change.",
+            "Analyze the line between bravery and foolishness when standing up for a belief.",
+            "Explain your stance on neutrality in the face of injustice: is it complicity or wisdom?",
+            "If you could ensure world peace by removing free will, explain your decision.",
+            "Discuss the ethics of bringing a child into a world facing overpopulation and climate crisis.",
+            "Explain whether forgiveness is possible without remorse from the offender.",
+            "Critique the concept of a 'victimless crime'\u2014does such a thing exist?",
+            "If you had to choose between saving a library of all human knowledge or a hospital full of patients, explain your choice.",
+            "Analyze the philosophical argument that 'the end justifies the means'."
+        ],
+        "Finance": [
+            "If you won the lottery tomorrow, describe the first three things you would do.",
+            "Explain your personal philosophy on saving versus spending.",
+            "What is the worst financial purchase you have ever made?",
+            "If you could teach a class on money management to teenagers, what is the first lesson?",
+            "Discuss whether money can truly buy happiness.",
+            "Describe your best tip for budgeting or saving money.",
+            "If you had to invest in one company right now, which would it be and why?",
+            "What is something you refuse to spend a lot of money on?",
+            "What is something you believe is always worth the extra cost?",
+            "How has your view on money changed from when you were younger?"
+        ],
+        "Food": [
+            "If you were forced to eat only one meal for the rest of your life, describe what it would be.",
+            "Describe a popular food item that you absolutely refuse to eat.",
+            "Compare the experience of cooking at home versus dining out.",
+            "Describe the strangest or most exotic thing you have ever eaten.",
+            "If you opened a restaurant, describe the theme and the menu.",
+            "Debate whether dessert is the most important part of the meal.",
+            "Describe your signature dish and how you prepare it.",
+            "Make a case for why you prefer Coffee over Tea (or vice versa).",
+            "Describe a food from your childhood that instantly brings back memories.",
+            "If you were a spice in a kitchen cabinet, explain which one you would be.",
+            "If you were restricted to one culture's cuisine, explain which you would choose and why.",
+            "Discuss the ethical implications of lab-grown meat replacing traditional farming.",
+            "If you saw the full history of your food's production, describe how your eating habits might change.",
+            "Compare the function of food as fuel versus food as pleasure.",
+            "If you had to butcher your own meat, explain if you would continue to eat it.",
+            "Analyze how the act of breaking bread changes social dynamics.",
+            "Debate the value of food authenticity versus food innovation.",
+            "If a nutrient pill replaced meals, explain what we would lose socially.",
+            "Discuss the ethics of eating imported exotic foods vs. local seasonal foods.",
+            "Explain how the company you keep affects your perception of a meal.",
+            "If you could resurrect a discontinued food, describe what it is and why you miss it.",
+            "Discuss the etiquette of refusing food in a cross-cultural setting.",
+            "Analyze whether 'foodie' culture appreciates or fetishizes food.",
+            "If you were a chef, describe the philosophy behind your menu.",
+            "Critique the adage that breakfast is the most important meal.",
+            "Discuss the responsibility of fast food chains in the obesity epidemic.",
+            "If you could ban one ingredient globally, explain your choice.",
+            "Argue whether cooking should be a mandatory life skill taught in schools.",
+            "Explain the strong connection between taste/smell and memory.",
+            "If you could host a dinner party for any three people, describe the guest list and the menu.",
+            "Debate the 'rules' of food purity (e.g., ketchup on steak).",
+            "Discuss whether a plant-based diet is the inevitable future.",
+            "If you could master one culinary technique, describe which one and why.",
+            "Compare the value of frequent casual dining vs. infrequent fine dining.",
+            "Discuss the role of schools in regulating children's diets.",
+            "Describe a 'comfort food' and explain the emotional need it fills.",
+            "Analyze the role of food in religious and cultural identity.",
+            "If you could keep only one taste sensation (sweet, salty, etc.), explain your choice.",
+            "Discuss the effort-to-reward ratio of home cooking.",
+            "Argue for or against a 'sugar tax'.",
+            "Describe the atmosphere of your dream restaurant.",
+            "Discuss the psychological benefits of expressing gratitude before eating.",
+            "Analyze the impact of delivery apps on culinary appreciation.",
+            "If you could eat a fictional meal, describe which one captures your imagination.",
+            "Compare the artistry of cooking versus baking.",
+            "Discuss the ecological arguments for stopping fish consumption.",
+            "Explain what treating waitstaff poorly reveals about a person.",
+            "If you had to eat one lunch forever, describe the meal that wouldn't bore you.",
+            "Discuss the psychology behind the pricing of wine and luxury foods.",
+            "Identify the most underrated vegetable and argue its case."
+        ],
+        "Future": [
+            "Describe where you realistically see yourself in 10 years.",
+            "If you had the ability to see the future, explain whether you would want to know how you die.",
+            "What aspect of the future of humanity are you most optimistic about?",
+            "If you wrote a letter to the next generation, summarize what you would say.",
+            "Predict whether the world will be better or worse in 50 years and explain your reasoning.",
+            "Describe a future goal you haven't started working on yet.",
+            "If you could predict the outcome of one future event, which one would it be?",
+            "Describe the legacy you hope to leave behind when you are gone.",
+            "If a crystal ball could answer one question about the future, what would you ask?",
+            "Explain how you mentally or physically prepare for the unknown.",
+            "If we colonize Mars, describe how the government structure should differ from Earth's.",
+            "Imagine a future where no one has to work to survive; describe what humanity would do with its time.",
+            "Discuss the trade-off between total privacy and a perfectly safe, crime-free society.",
+            "As more screens are in front of more faces and for longer amounts of time, propose a legal framework for regulating screen time for children.",
+            "If we meet intelligent alien life, explain the strategic pros and cons of communicating vs. staying hidden.",
+            "If a pill removed the need for sleep with no side effects, predict how society would restructure itself.",
+            "If we could resurrect extinct species, discuss the ecological and ethical implications.",
+            "If you could upload your consciousness to a cloud to live forever, explain the factors that would influence your decision.",
+            "If you could replace a healthy body part with a superior robotic enhancement, describe which part and why.",
+            "If you could have a neural implant for instant and private internet access, explain your hesitation or enthusiasm.",
+            "If 3D printed food was nutritionally perfect and synthetic, describe your willingness to switch to it.",
+            "If we could record and replay dreams, analyze the potential benefits and invasions of privacy.",
+            "Discuss the societal consequences if the average human lifespan extended to 150 years.",
+            "If you could buy 'memories' of vacations you never took, explain why you would or wouldn't do it.",
+            "If all manual labor were automated, explain where humans would find their sense of purpose.",
+            "Predict what system of value exchange might replace 'money' in the distant future.",
+            "Discuss the ownership rights of land on other planets.",
+            "If all disease were eliminated, propose a solution for the resulting population boom.",
+            "Predict the fate of handwriting as a skill in the next 100 years.",
+            "Debate the priority of exploring the deep ocean versus deep space.",
+            "Argue whether internet access should be classified as a fundamental human right."
+        ],
+        "Growth": [
+            "Describe one habit you are currently trying to break and your strategy for doing so.",
+            "If you could give your younger self one piece of advice, what would it be?",
+            "Define what 'personal success' looks like to you, excluding money.",
+            "Describe a failure in your life that actually turned out to be a blessing.",
+            "What is a skill you have always wanted to learn but haven't yet?",
+            "Explain your process for picking yourself up after a bad day.",
+            "Share the best piece of advice you have ever received.",
+            "Discuss whether people can truly change their fundamental nature.",
+            "Describe what you are most proud of achieving in the last year.",
+            "If you could change one aspect of your personality, what would it be?",
+            "If you could advise your younger self, describe the specific guidance you would offer.",
+            "Compare the learning value of failure versus success.",
+            "Discuss the necessity of discomfort in the process of growth.",
+            "If you could swap an old skill for a new one, explain the trade you would make.",
+            "Differentiate between the concepts of 'growing up' and 'aging'.",
+            "Debate the merits of being a generalist versus a specialist.",
+            "If you could alter one personality trait, describe the change and the expected outcome.",
+            "Discuss whether deep growth requires deep trauma.",
+            "If you achieved all your goals tomorrow, describe how you would feel.",
+            "Discuss the feasibility of starting a completely new life path late in life.",
+            "Analyze the role of envy: is it a motivator or a poison?",
+            "If you saw a breakdown of your life's time usage, predict your reaction.",
+            "Compare the effectiveness of self-criticism versus self-compassion.",
+            "Discuss 'imposter syndrome' as a potential sign of growth.",
+            "If you could unlearn a habit, describe which one and why.",
+            "Compare the value of intelligence versus wisdom.",
+            "Analyze the concept of 'peak years' and where you stand in relation to them.",
+            "If you could ask your future self one question, explain what you would ask.",
+            "Discuss the psychological effects of comparing oneself to others.",
+            "Analyze the fine line between healthy ambition and greed.",
+            "If you could redo one year of your life, explain which one and what you would change.",
+            "Discuss whether suffering is a prerequisite for empathy.",
+            "Describe the hardest lesson you learned and how it changed you.",
+            "If you could be famous for one thing, describe what you would choose.",
+            "Discuss the conflict between logic and intuition in decision making.",
+            "Debate the existence of destiny versus self-determination.",
+            "If you could confront a past hurt, describe what you would say.",
+            "Discuss the difficulty of changing core values in adulthood.",
+            "Analyze the importance of solitude for personal growth.",
+            "If you wrote a memoir, explain the title and the central theme.",
+            "Compare the worldviews of the optimist, pessimist, and realist.",
+            "Describe a piece of media that shifted your worldview.",
+            "If you could master an art form, explain which one connects with you.",
+            "Discuss the courage required to quit versus the courage to persevere.",
+            "Analyze the benefits of boredom.",
+            "If you could choose a mentor from history, explain who and why.",
+            "Compare the weight of regret for action vs. regret for inaction.",
+            "Discuss how your definition of success has evolved over time.",
+            "If you could simplify your life, describe what you would cut out.",
+            "Identify the primary obstacle currently hindering your potential."
+        ],
+        "Health": [
+            "Explain what a 'healthy lifestyle' means to you beyond just diet and exercise.",
+            "Describe your most effective techniques for handling stress.",
+            "Discuss whether society treats mental health as seriously as physical health.",
+            "Describe your favorite way to exercise and why you enjoy it.",
+            "If you could eliminate one disease from the world, explain which one and why.",
+            "Discuss your thoughts on the effectiveness of alternative medicine.",
+            "Explain how your sleep quality affects your mood and productivity.",
+            "Describe a healthy habit you struggle to maintain.",
+            "Compare the challenge of running a marathon versus swimming the English Channel.",
+            "Describe your ultimate comfort food and when you crave it."
+        ],
+        "History": [
+            "If you could have dinner with any historical figure, tell us who and why.",
+            "Describe a fashion era from history that you wish would make a comeback.",
+            "If you could witness one historical event firsthand, which would it be?",
+            "Share the most interesting fact you know about your family history.",
+            "If you could change the outcome of one historical war, which would it be and why?",
+            "Who do you believe is the most underrated person in history?",
+            "Would you prefer to live in the past or the future? Explain your choice.",
+            "Describe an invention from the past that we should bring back today.",
+            "Discuss how much you know about your ancestors and if it affects your identity.",
+            "If you were a monarch in medieval times, what would your title be?"
+        ],
+        "Human Nature": [
+            "Evaluate whether humanity is becoming kinder or crueler over time.",
+            "Explain the psychological difficulty of admitting when we are wrong.",
+            "If you could solve one universal mystery, describe which one you would choose.",
+            "Discuss the role of boredom in fostering creativity.",
+            "Analyze why the unknown frightens us more than known dangers.",
+            "Discuss whether character is defined by public actions or private thoughts.",
+            "Explain why nostalgia can feel painful.",
+            "Discuss the possibility of living a life with zero regrets.",
+            "Analyze the human drive for perfection despite knowing it is unattainable.",
+            "Discuss whether everyone has a 'breaking point'.",
+            "Explain why giving advice is easier than taking it.",
+            "If you could live life backward (old age to infancy), describe the pros and cons.",
+            "Explain why human beings are so drawn to tragedy in art and media.",
+            "Discuss whether curiosity is more often a blessing or a curse.",
+            "If we didn't need to sleep, explain how our definition of being 'human' would shift.",
+            "Analyze why we often hurt the ones we love the most.",
+            "Discuss whether creation or destruction is more natural to the human impulse.",
+            "If you were the last person on Earth, describe the routine you would keep and why.",
+            "Evaluate the roles of nature vs. nurture in shaping personality.",
+            "Explain the psychological drive behind leaving a legacy.",
+            "Discuss whether the body keeps score of trauma even when the mind forgets.",
+            "If you could read minds, explain how it would impact your view of humanity.",
+            "Analyze why scarcity makes things more valuable to us.",
+            "If fear were removed from the human experience, predict the fate of the species.",
+            "Analyze the ratio of 'born talent' versus 'hard work' in high achievers.",
+            "If you could permanently remove one emotion from the human spectrum, explain which one and why.",
+            "Discuss the validity of the statement: 'People don't change, they just reveal who they really are.'",
+            "If money didn't exist, describe the metrics humans would use to determine status.",
+            "Compare the value of a short, intense life versus a long, stable life.",
+            "Debate the merit of 'ignorance is bliss' versus the pain of knowing the truth.",
+            "A powerful mage offers you a bargain: you will gain instant fluency in every spoken human language, but you will be cursed to permanently forget how to read. Do you sign the contract? Why or why not?",
+            "Discuss whether the desire for power is biological or learned.",
+            "Imagine meeting your 'alternate universe' self who made opposite choices; describe how you would get along.",
+            "Discuss whether true happiness is possible without the context of suffering.",
+            "Compare the human desire for freedom versus the desire for security."
+        ],
+        "Humor": [
+            "If animals could talk, explain which species would be the rudest.",
+            "Recount the funniest thing that has happened to you recently.",
+            "If you were required to wear a warning label, what would yours say?",
+            "Describe a song you love but are usually embarrassed to admit.",
+            "If you were a vegetable, explain which one you would be and why.",
+            "Share the worst pickup line you have ever heard or used.",
+            "If you could trade lives with a cartoon character, who would it be?",
+            "Describe the weirdest food combination you secretly enjoy.",
+            "If you were a superhero, describe what your 'useless' superpower would be.",
+            "Summarize your life using only a movie title."
+        ],
+        "Leadership": [
+            "Discuss whether fear or respect creates a more effective leader.",
+            "Describe a leader you admire and the specific traits they possess.",
+            "If you were President of the World for one day, describe the first rule you would make.",
+            "Debate whether it is better to be a loved leader or an effective leader.",
+            "Describe a time you had to take charge of a situation unexpectedly.",
+            "Share the most difficult decision you have ever had to make as a leader.",
+            "Explain your process for handling and learning from criticism.",
+            "Identify the one quality that every leader must possess.",
+            "Debate whether leadership is a natural talent or a learned skill.",
+            "If you could lead any company in the world, which one would it be and why?",
+            "Compare the effectiveness of leading through fear versus leading through love.",
+            "If you were CEO, explain how you would balance profit and employee well-being.",
+            "Debate whether leaders are born or made.",
+            "If you had to fire a friend to save the team, describe your approach.",
+            "Discuss the balance between transparency and necessary secrecy in leadership.",
+            "If you led a country, describe the first crisis you would address.",
+            "Analyze how an introvert can be an effective leader.",
+            "Discuss the validity of the phrase 'absolute power corrupts absolutely'.",
+            "If you could emulate a historical leader, explain who and why.",
+            "Discuss whether a leader's primary role is to answer questions or ask them.",
+            "Debate whether leaders should be held to higher moral standards.",
+            "Discuss the leader's responsibility when the team fails.",
+            "Analyze whether micromanagement ever has a place in leadership.",
+            "Discuss the role of empathy in high-stakes decision making.",
+            "If you led a revolution, explain the cause you would champion.",
+            "Compare the risks of indecision versus the risks of wrong decisions.",
+            "Describe your strategy for handling dissent within a team.",
+            "If choosing a successor, explain if you would pick a clone or an opposite.",
+            "Discuss the importance of humility in leadership.",
+            "Analyze the extent of a leader's responsibility for employees' personal lives.",
+            "Discuss the expectation for a captain to go down with the ship.",
+            "Compare the value of charisma versus competence in a leader.",
+            "Differentiate between a 'boss' and a 'leader'.",
+            "If you could reverse one global leadership decision, describe which one.",
+            "Discuss the perception of vulnerability in leadership.",
+            "Analyze the concept of 'servant leadership'.",
+            "If you faced a mutiny, describe how you would handle it.",
+            "Compare leading from the front versus guiding from the back.",
+            "Describe how to motivate a team that has lost hope.",
+            "If you had absolute authority for a day, describe your agenda.",
+            "Discuss whether compromise is a strength or weakness.",
+            "Analyze the dynamics of young leaders managing older teams.",
+            "If you could enforce one rule for all leaders, describe it.",
+            "Discuss the possibility of friendship across hierarchical lines.",
+            "Analyze how ego impacts leadership performance.",
+            "If you were a general, explain your criteria for sending troops into danger.",
+            "Compare the value of vision versus execution.",
+            "Describe how to manage a high-performer who is toxic to culture.",
+            "If you could strip a leader of power, explain your choice.",
+            "Describe the legacy you would hope to leave as a leader."
+        ],
+        "Motivation": [
+            "Describe exactly what gets you out of bed in the morning.",
+            "Discuss the concept that 'you create your own luck'.",
+            "Explain how you silence your inner critic when you are doubtful.",
+            "Share a quote that inspires you and explain why.",
+            "Classify yourself as an optimist, pessimist, or realist, and give examples.",
+            "Define what 'happiness' means to you in a practical sense.",
+            "Describe something simple that instantly puts you in a good mood.",
+            "Discuss your stance on destiny versus free will.",
+            "Explain how you celebrate your small wins.",
+            "Describe your 'why'\u2014the driving force behind your actions."
+        ],
+        "Nature": [
+            "If you could be any animal for a day, explain what you would be and what you would do.",
+            "Describe your favorite season and the specific reasons why you love it.",
+            "Compare the experience of being in the mountains versus being at the beach.",
+            "Suggest practical steps individuals can take to help the environment.",
+            "Describe the most beautiful natural view you have ever seen.",
+            "If you could talk to trees, what do you think they would say to us?",
+            "Discuss whether humans are a part of nature or separate from it.",
+            "Describe your favorite flower or plant and why you like it.",
+            "If you had to live in extreme cold or extreme heat, which would you choose?",
+            "Explain why it is important to protect wildlife diversity."
+        ],
+        "Productivity": [
+            "Analyze whether you are naturally a procrastinator or a planner.",
+            "Describe your favorite time of day and why it is your peak time.",
+            "If you had an extra hour every day, explain how you would spend it.",
+            "Explain your methods for staying focused in a distracted world.",
+            "Discuss whether 'hustle culture' is healthy or toxic.",
+            "Identify the biggest time-waster in your life right now.",
+            "Explain how you prioritize your tasks when everything seems urgent.",
+            "Compare the benefits of a paper planner versus digital tools.",
+            "Describe what a perfect morning routine looks like for you.",
+            "Discuss whether it is possible to have a perfect work-life balance.",
+            "If your value wasn't tied to economic output, describe your ideal day.",
+            "Critique the modern 40-hour work week structure.",
+            "Analyze the effects of 'hustle culture' on mental health.",
+            "If you could automate your job, explain if you would reveal that to your employer.",
+            "Differentiate between being 'busy' and being 'productive'.",
+            "Discuss the feasibility of work-life balance in high-performance careers.",
+            "If you could trade salary for significant time off, explain your decision.",
+            "Analyze procrastination: is it laziness or fear?",
+            "If you had an extra hour of free time daily, describe how you would use it.",
+            "Discuss the efficacy of multitasking.",
+            "Analyze the impact of office design on productivity.",
+            "If you could instantly complete one lingering project, describe it.",
+            "Compare the productivity of early birds versus night owls.",
+            "Discuss the impact of digital notifications on focus.",
+            "If money were irrelevant, explain if you would still work.",
+            "Analyze whether burnout is a personal failure or a systemic one.",
+            "Compare the utility of to-do lists versus time-blocking.",
+            "If you could automate chores, describe what you would give up.",
+            "Discuss how perfectionism hinders output.",
+            "Analyze the utility of meetings in the modern workplace.",
+            "If you took a one-year sabbatical, describe your plan.",
+            "Compare working hard versus working smart.",
+            "Discuss the concepts of 'deep work' versus 'shallow work'.",
+            "If you had a personal assistant, describe the tasks you would delegate.",
+            "Analyze how pressure affects your performance.",
+            "Discuss whether creativity can be scheduled.",
+            "If you could retire young, explain why you would or wouldn't.",
+            "Discuss the value of doing absolutely nothing.",
+            "Analyze the relationship between a tidy environment and a clear mind.",
+            "If you limited email to once a day, predict the consequences.",
+            "Critique the 'gig economy' model.",
+            "Discuss the long-term viability of remote work.",
+            "Analyze the value of speed reading and rapid consumption.",
+            "Compare the 'eat the frog' method vs. starting with easy tasks.",
+            "Discuss the importance of a morning routine.",
+            "If you could remove one distraction forever, explain your choice.",
+            "Discuss the downsides of being hyper-organized.",
+            "Analyze the relationship between success and sacrifice.",
+            "If you could work from anywhere, describe your ideal location.",
+            "Describe the one productivity method that actually works for you."
+        ],
+        "Relationships": [
+            "Identify the most important quality you look for in a friend.",
+            "Discuss your thoughts on the existence of 'love at first sight'.",
+            "Explain your strategy for resolving conflicts with loved ones.",
+            "Debate whether it is better to have many friends or a few close ones.",
+            "Share the best relationship advice you have ever received.",
+            "Explain how you maintain long-distance friendships.",
+            "Describe a specific 'deal-breaker' for you in a relationship.",
+            "Discuss the dynamics of platonic friendships between men and women.",
+            "Describe how you show appreciation to those you love.",
+            "What do you believe is the key ingredient to a happy marriage?",
+            "If a device beeped when people lied, describe how society and relationships would change.",
+            "Critique the concept of 'unconditional love' between adults.",
+            "If you had to choose between being respected or liked, explain your choice.",
+            "Analyze the impact of social media on our capacity for empathy.",
+            "If you could erase a relationship from your memory to remove the pain, explain why you would or wouldn't.",
+            "Compare the emotional toll of being the leaver versus the left.",
+            "If you could feel someone else's emotions for 10 minutes, describe who you would pick and why.",
+            "Discuss the ethics of keeping a secret to protect a partner's feelings.",
+            "Compare the importance of shared interests versus shared values in a friendship.",
+            "Analyze the viability of strictly platonic friendships between attracted genders.",
+            "Debate whether a partner should challenge you or support you unconditionally.",
+            "Discuss the arguments for and against staying in a relationship 'for the kids'.",
+            "Differentiate between jealousy as love and jealousy as insecurity.",
+            "If you could hear your partner's thoughts, explain why you would want that or avoid it.",
+            "Discuss the process of rebuilding trust after it has been broken.",
+            "Analyze the effects of distance on the strength of a relationship.",
+            "Discuss how much a person should be willing to change for a partner.",
+            "Evaluate the feasibility of a relationship between people with opposing political views.",
+            "Discuss whether 'closure' is a real need or a myth.",
+            "Analyze the depth of love possible in an online-only relationship.",
+            "Discuss the role of privacy versus secrecy in a marriage.",
+            "Debate the concept of 'The One' versus 'Good Enough'.",
+            "Compare the state of being single and lonely versus being in a relationship and settled.",
+            "Discuss the appropriate level of parental influence on partner choice.",
+            "Analyze the possibility of being friends with an ex immediately after a breakup.",
+            "Critique the phenomenon of 'love at first sight'.",
+            "Explain when it is appropriate to tell a friend you dislike their partner.",
+            "Compare the value of a wide network vs. a tight circle.",
+            "Define what loyalty looks like in a modern friendship.",
+            "Discuss the guilt associated with outgrowing friends.",
+            "Analyze the risks and rewards of lending money to friends.",
+            "Explain the difference between loving someone and liking them.",
+            "Discuss the depreciation of physical attraction in a long-term relationship.",
+            "Analyze the challenges of significant age gaps in relationships.",
+            "Debate the merits of 'cooling off' periods versus resolving conflict immediately.",
+            "Discuss the sustainability of a relationship without physical intimacy.",
+            "Analyze the trade-off between career ambition and relationship health.",
+            "Explain how you maintain a friendship with someone who has different ethics.",
+            "Identify and explain your biggest non-negotiable in a relationship."
+        ],
+        "Resilience": [
+            "Describe the hardest physical challenge you have ever endured.",
+            "Tell us about a time you wanted to quit a project but didn't.",
+            "Describe the strongest person you know and what makes them resilient.",
+            "Explain how you stay motivated when everything seems to be going wrong.",
+            "Describe a setback that taught you a valuable lesson.",
+            "Discuss whether resilience is a trait you are born with or something you build.",
+            "Share your personal mantra for when times get tough.",
+            "Describe a time you had to start over from scratch.",
+            "Explain how you support a friend who is going through a hard time.",
+            "Define what 'courage' means to you in everyday life.",
+            "If you could eliminate all pain, explain why you would or wouldn't.",
+            "Debate whether resilience is innate or learned.",
+            "Describe a situation where giving up is the stronger choice.",
+            "If you lost everything, describe your first steps to rebuilding.",
+            "Discuss the coexistence of resilience and vulnerability.",
+            "Analyze the role of humor as a coping mechanism.",
+            "If you could speak to yourself during your lowest point, what would you say?",
+            "Critique the phrase 'what doesn't kill you makes you stronger'.",
+            "Discuss whether hope is an emotion or a discipline.",
+            "If you faced long-term isolation, describe your mental survival strategy.",
+            "Compare suppressing emotions vs. feeling them during a crisis.",
+            "Differentiate between 'surviving' and 'thriving'.",
+            "If you could borrow the resilience of a fictional character, who would it be?",
+            "Discuss whether asking for help undermines resilience.",
+            "Describe your process for handling rejection.",
+            "If you failed publicly, explain how you would handle the shame.",
+            "Discuss the pros and cons of stoicism.",
+            "Analyze the concept of 'post-traumatic growth'.",
+            "If you could shield loved ones from heartbreak, explain if you would.",
+            "Compare the difficulty of forgiving others vs. forgiving yourself.",
+            "Discuss the accuracy of the phrase 'time heals all wounds'.",
+            "Describe your default reaction to crisis: panic or calm?",
+            "Discuss the potential benefits of hitting 'rock bottom'.",
+            "Describe the most resilient person you know.",
+            "If you could carry a burden for someone else, explain if you would.",
+            "Compare mental toughness with physical endurance.",
+            "Discuss whether optimists or realists are more resilient.",
+            "If you could alter your stress response, describe the change.",
+            "Discuss the bravery involved in fighting a losing battle.",
+            "Analyze the role of community in individual resilience.",
+            "If you could prep for a disaster, describe the skills you would learn.",
+            "Discuss the downside of being too resilient.",
+            "Explain how one finds meaning in suffering.",
+            "If you could erase fear, explain the potential downsides.",
+            "Discuss patience as a form of resilience.",
+            "Analyze the comfort found in the phrase 'this too shall pass'.",
+            "If stranded on an island, describe the trait that would save you.",
+            "Compare bouncing back quickly vs. healing slowly.",
+            "Describe the 'anchor' that keeps you steady in hard times."
+        ],
+        "Science": [
+            "If you discovered a new planet, what would you name it and why?",
+            "What do you believe is the greatest scientific discovery of all time?",
+            "Discuss the probability of life existing on other planets.",
+            "If you could solve one scientific mystery, which one would it be?",
+            "Debate whether we should prioritize space exploration or fixing Earth's problems.",
+            "Share a scientific fact that blows your mind every time you think about it.",
+            "If you could be a scientist in any field, explain which field you would choose.",
+            "Share your thoughts on how the universe began.",
+            "Discuss the ethics of cloning.",
+            "Predict an invention that you think will define the 21st century."
+        ],
+        "Society": [
+            "If you founded a new civilization, describe the first fundamental law you would enact.",
+            "Argue for or against maximum age limits for world leaders.",
+            "Predict the mental health effects on society if art and music were banned.",
+            "Debate whether voting should be a mandatory duty or a voluntary right.",
+            "If we were proven to be in a simulation, describe how your daily life would change.",
+            "Compare the goals of 'equality of outcome' versus 'equality of opportunity'.",
+            "Discuss the benefits and drawbacks of a single global language.",
+            "Debate the value of free higher education versus the value of paid investment.",
+            "Predict the stability of society if all wealth were redistributed equally overnight.",
+            "Analyze the role of tradition: is it an anchor or a chain?",
+            "Discuss the necessity of a global governing body for the internet.",
+            "Evaluate the feasibility of a 4-day work week for all sectors.",
+            "Argue whether prisoners should retain the right to vote.",
+            "If you designed a curriculum, describe the one mandatory subject you would add.",
+            "Analyze the fine line between patriotism and nationalism.",
+            "Discuss the moral arguments for and against the existence of billionaires.",
+            "Describe a scenario where censorship is necessary for the greater good.",
+            "Debate the status of healthcare as a business versus a public service.",
+            "Analyze the purpose of the death penalty: deterrent or revenge?",
+            "Discuss the hypothetical consequences of open global borders.",
+            "Critique democracy as a system of government.",
+            "Argue for or against a government salary for stay-at-home parents.",
+            "Discuss the ethics of data commodification by large tech companies.",
+            "Evaluate the practicality of a total ban on single-use plastics.",
+            "If one country had to lead the world, describe the qualities that country should have.",
+            "Debate the merits of mandatory military or civil service.",
+            "Analyze the impact of gentrification on culture and community.",
+            "Discuss the potential for a 'robot tax' to replace lost income tax.",
+            "Debate the government's role in legislating morality.",
+            "Argue for or against free public transportation.",
+            "Analyze the relevance of the nuclear family structure in modern times.",
+            "Discuss what the treatment of the elderly reveals about a society.",
+            "Debate the allocation of resources to space exploration vs. Earth's problems.",
+            "Discuss the pros and cons of a single global currency.",
+            "Propose ethical solutions to global overpopulation.",
+            "Argue the case for granting animals legal personhood.",
+            "Imagine a society without police and describe how it would function.",
+            "Discuss the potential benefits of non-profit news organizations.",
+            "Analyze the value society places on fame.",
+            "Identify and explain the single greatest threat to modern civilization."
+        ],
+        "Technology": [
+            "Discuss whether Artificial Intelligence is a threat or a blessing to humanity.",
+            "If you could invent one gadget to make your life easier, describe what it would do.",
+            "Explain how technology has changed the way you communicate with friends.",
+            "Debate whether social media brings us closer together or drives us apart.",
+            "If you had to give up your smartphone for a month, describe how you would cope.",
+            "Describe a piece of sci-fi technology you wish existed today.",
+            "Predict what transportation will look like in 100 years.",
+            "Discuss whether technology is making us smarter or more dependent.",
+            "If you could upload your consciousness to a computer, explain if you would do it.",
+            "Describe the most useless piece of technology you have ever owned.",
+            "When lifelike humanoid robots are mass-produced, argue for or against assigning them genders.",
+            "If an AI creates art indistinguishable from a human artist, discuss how we should value that art.",
+            "Argue for or against a global ban on autonomous weapons systems (killer robots).",
+            "Predict how virtual reality might eventually replace physical travel and social interaction.",
+            "If an AI commits a crime, explain who should be held liable: the creator, the user, or the AI.",
+            "Discuss how instant digital translation might affect the cultural value of learning languages.",
+            "If teleportation existed, describe how the concept of national borders would change.",
+            "Compare your level of trust in a robot surgeon versus a human surgeon.",
+            "If we could control the weather, explain how we should decide who controls the thermostat.",
+            "Evaluate the likelihood of AI becoming a partner to humanity versus a competitor.",
+            "If you had a digital twin to handle boring tasks, describe how much autonomy you would give it.",
+            "If technology allowed us to 'delete' traumatic memories, argue whether this would be healthy or harmful.",
+            "If you could live in a perfect simulation, explain why you would choose that or a flawed reality.",
+            "Analyze whether technology is deepening our connections or merely increasing their frequency."
+        ],
+        "Travel": [
+            "Describe the number one place on your bucket list and why it is there.",
+            "Compare the pros and cons of solo travel versus traveling with a group.",
+            "Recount the worst travel experience you have ever had.",
+            "If you could live in a hotel for a year, explain whether you would do it.",
+            "Describe the best meal you have ever had while traveling.",
+            "Do you prefer a relaxing vacation or an action-packed one? Explain why.",
+            "Describe a tourist destination you feel is overrated.",
+            "If you could teleport anywhere right now, where would you go?",
+            "What is the one item you never travel without?",
+            "Explain how traveling has changed your view of the world."
+        ]
+    };
+
+    // --- 2. State Management & Logic ---
+
+    const STORAGE_KEY = 'toastmasters_question_history';
+    const COOLDOWN_MS = 60 * 60 * 1000; // 60 minutes in milliseconds
+
+    const selectEl = document.getElementById('topic-select');
+    const generateBtn = document.getElementById('btn-generate');
+    const resetBtn = document.getElementById('btn-reset');
+    const questionTextEl = document.getElementById('question-text');
+    const topicBadgeEl = document.getElementById('topic-badge');
+
+    // Populate Select Dropdown
+    const topicKeys = Object.keys(topicsData);
+    topicKeys.forEach(topic => {
+        const option = document.createElement('option');
+        option.value = topic;
+        option.textContent = topic;
+        selectEl.appendChild(option);
+    });
+
+    // Helper: Get History from LocalStorage
+    function getHistory() {
+        const history = localStorage.getItem(STORAGE_KEY);
+        return history ? JSON.parse(history) : {};
+    }
+
+    // Helper: Save History
+    function saveHistory(history) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    }
+
+    // Helper: Clean old history (older than 60 mins)
+    function cleanHistory() {
+        const history = getHistory();
+        const now = Date.now();
+        let changed = false;
+
+        for (const [question, timestamp] of Object.entries(history)) {
+            if (now - timestamp > COOLDOWN_MS) {
+                delete history[question];
+                changed = true;
+            }
+        }
+        if (changed) saveHistory(history);
+        return history;
+    }
+
+    // Main Function: Get Question
+    function generateQuestion() {
+        const selectedTopic = selectEl.value;
+        const history = cleanHistory();
+        const now = Date.now();
+
+        // 1. Gather Candidate Questions
+        let candidates = [];
+        
+        if (selectedTopic === 'all') {
+            Object.keys(topicsData).forEach(key => {
+                topicsData[key].forEach(q => {
+                    candidates.push({ topic: key, text: q });
+                });
+            });
+        } else {
+            topicsData[selectedTopic].forEach(q => {
+                candidates.push({ topic: selectedTopic, text: q });
+            });
+        }
+
+        // 2. Filter out recently used questions
+        const validCandidates = candidates.filter(item => {
+            const lastUsed = history[item.text];
+            return !lastUsed || (now - lastUsed > COOLDOWN_MS);
+        });
+
+        // 3. Handle Empty State
+        if (validCandidates.length === 0) {
+            topicBadgeEl.style.visibility = 'hidden';
+            questionTextEl.innerHTML = `<span class="error-msg">All questions in this category have been used recently.<br>Please wait or choose a different category.</span>`;
+            fadeInText();
+            return;
+        }
+
+        // 4. Pick Random
+        const randomIndex = Math.floor(Math.random() * validCandidates.length);
+        const selection = validCandidates[randomIndex];
+
+        // 5. Update UI
+        topicBadgeEl.textContent = selection.topic;
+        topicBadgeEl.style.visibility = 'visible';
+        questionTextEl.textContent = selection.text;
+        fadeInText();
+
+        // 6. Save to History
+        history[selection.text] = now;
+        saveHistory(history);
+    }
+
+    function fadeInText() {
+        questionTextEl.classList.remove('fade-in');
+        // Trigger reflow to restart animation
+        void questionTextEl.offsetWidth; 
+        questionTextEl.classList.add('fade-in');
+    }
+
+    // Reset Logic
+    resetBtn.addEventListener('click', () => {
+        if(confirm("Are you sure you want to clear the 60-minute memory?")) {
+            localStorage.removeItem(STORAGE_KEY);
+            alert("History cleared. All questions are available again.");
+        }
+    });
+
+    generateBtn.addEventListener('click', generateQuestion);
+</script>
+{% endblock %}

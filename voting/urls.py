@@ -15,4 +15,5 @@ urlpatterns = [
     path('close-polls/<str:code>/', views.close_polls, name='close_polls'),
     path('toggle-results/<str:code>/', views.toggle_results, name='toggle_results'),
     path('timer/', views.timer_view, name='timer'),
+    path('table-topics/', views.tabletopics_view, name='tabletopics'),
 ]

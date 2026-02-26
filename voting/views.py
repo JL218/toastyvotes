@@ -272,3 +272,8 @@ def toggle_results(request, code):
 def timer_view(request):
     """Speech timer tool view"""
     return render(request, 'voting/timer.html')
+
+
+def tabletopics_view(request):
+    """Table Topics Master tool view"""
+    return render(request, 'voting/tabletopics.html')
