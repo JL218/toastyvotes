@@ -163,3 +163,6 @@ SESSION_COOKIE_AGE = 86400  # 24 hours in seconds
 
 # Email settings (for development - console backend)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# OpenRouter API Key (for AI-powered Table Topics)
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', '')

@@ -3,12 +3,15 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
 from django.utils import timezone
-from django.http import HttpResponseForbidden, HttpResponse
+from django.http import HttpResponseForbidden, HttpResponse, JsonResponse
 from django.db.models import Count
 from django.db import transaction
+from django.views.decorators.http import require_POST
+from django.conf import settings
 from .models import VoteSession, Role, Vote, AdminProfile
 from .forms import UserRegistrationForm, VoteSessionForm, VoteForm
 import json
+import requests as http_requests
 
 
 def home(request):
@@ -277,3 +280,57 @@ def timer_view(request):
 def tabletopics_view(request):
     """Table Topics Master tool view"""
     return render(request, 'voting/tabletopics.html')
+
+
+@require_POST
+def generate_tabletopics(request):
+    """API endpoint to generate a Toastmasters Table Topics question via OpenRouter AI"""
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'Invalid request body.'}, status=400)
+
+    topic = body.get('topic', '').strip()
+    if not topic:
+        return JsonResponse({'error': 'Please provide a topic.'}, status=400)
+
+    api_key = settings.OPENROUTER_API_KEY
+    if not api_key:
+        return JsonResponse({'error': 'AI service is not configured.'}, status=500)
+
+    prompt = (
+        "You are a Toastmasters Table Topics Master. Given the topic below, generate "
+        "ONE thought-provoking, open-ended question suitable for a 1-2 minute impromptu "
+        "speech at a Toastmasters meeting. The question should invite personal reflection, "
+        "storytelling, or a clear opinion. Do NOT include any preamble, numbering, or "
+        "extra commentary—return ONLY the question itself.\n\n"
+        f"Topic: {topic}"
+    )
+
+    try:
+        response = http_requests.post(
+            'https://openrouter.ai/api/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'model': 'openai/gpt-5.4-mini',
+                'messages': [
+                    {'role': 'user', 'content': prompt}
+                ],
+                'max_tokens': 150,
+                'temperature': 0.9,
+            },
+            timeout=15,
+        )
+        response.raise_for_status()
+        data = response.json()
+        question = data['choices'][0]['message']['content'].strip()
+        return JsonResponse({'question': question, 'topic': topic})
+    except http_requests.exceptions.Timeout:
+        return JsonResponse({'error': 'AI service timed out. Please try again.'}, status=504)
+    except http_requests.exceptions.RequestException as e:
+        return JsonResponse({'error': 'Failed to reach AI service.'}, status=502)
+    except (KeyError, IndexError):
+        return JsonResponse({'error': 'Unexpected response from AI service.'}, status=502)

@@ -16,4 +16,5 @@ urlpatterns = [
     path('toggle-results/<str:code>/', views.toggle_results, name='toggle_results'),
     path('timer/', views.timer_view, name='timer'),
     path('table-topics/', views.tabletopics_view, name='tabletopics'),
+    path('api/generate-question/', views.generate_tabletopics, name='generate_tabletopics'),
 ]
